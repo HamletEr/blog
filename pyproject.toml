@@ -10,6 +10,8 @@ dependencies = [
 dev = [
     "mypy==2.1.0",
     "pre-commit==4.6.0",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
     "ruff==0.15.20",
 ]
 
@@ -40,3 +42,5 @@ strict = true
 ignore_missing_imports = true
 mypy_path = ["src"]
 
+[pytest]
+asyncio_mode = "auto"
