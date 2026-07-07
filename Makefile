@@ -1,6 +1,6 @@
 ROOT=src
 
-.PHONY: help rlint rfmt types check
+.PHONY: help rlint rfmt types check tests
 
 help:
 	@echo "   Tool   |   Command   |   Description"
@@ -10,6 +10,7 @@ help:
 	@echo "   Mypy      make types     'uv run mypy .'"
 	@echo ""
 	@echo "    *        make check     'rlint rfmt types' - Run all checks"
+	@echo "  pytest     make tests      'uv run pytest -v' + coverage percent"
 
 rlint:
 	uv run ruff check $(ROOT) --fix
@@ -21,3 +22,6 @@ types:
 	uv run mypy $(ROOT)
 
 check: rlint rfmt types
+
+tests:
+	uv run pytest -v --cov --cov-branch --cov-report=term-missing
