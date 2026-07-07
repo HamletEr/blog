@@ -8,3 +8,7 @@ class ArticleNotFoundError(ArticleError):
 
 class PermissionDenied(ArticleError):
     pass
+
+
+class FragmentIsTooShortToSearch(ArticleError):
+    pass

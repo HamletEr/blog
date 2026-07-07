@@ -19,7 +19,15 @@ dev = [
 line-length = 88
 target-version = "py312"
 src = ["src"]
-extend-exclude = [".venv", "venv", "build", "dist", "__pycache__", "migrations"]
+extend-exclude = [
+    "tests",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "__pycache__",
+    "migrations"
+]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "W", "I", "UP", "B", "SIM"]
@@ -41,6 +49,7 @@ python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 mypy_path = ["src"]
+exclude = "src/test/*"
 
-[pytest]
+[tool.pytest.ini_options]
 asyncio_mode = "auto"

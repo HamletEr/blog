@@ -1,4 +1,9 @@
+from uuid import uuid4
+
+import pytest
+
 from blog_app.core.entities.articles import Article, ArticleData
+from blog_app.core.entities.users import User
 from blog_app.core.exceptions.articles import ArticleNotFoundError
 from blog_app.core.repositories.articles import ArticleRepository
 
@@ -13,11 +18,11 @@ class FakeArticleRepository(ArticleRepository):
         self._next_id += 1
         return next_id
 
-    async def get_by_id(self, article_id: int) -> Article:
+    async def get_by_id(self, article_id: int) -> Article | None:
         if (article_id not in self._articles) or (
-            self._articles[article_id].is_active is False
+            not self._articles[article_id].is_active
         ):
-            raise ArticleNotFoundError()
+            return None
         return self._articles[article_id]
 
     async def get_list(self, limit: int | None) -> list[Article]:
@@ -60,3 +65,36 @@ class FakeArticleRepository(ArticleRepository):
         if article_id not in self._articles:
             raise ArticleNotFoundError()
         self._articles[article_id].is_active = False
+
+
+@pytest.fixture
+def repository_fixture() -> FakeArticleRepository:
+    return FakeArticleRepository()
+
+
+@pytest.fixture
+def user_factory():
+    def _create_user(is_admin: bool = False) -> User:
+        return User(
+            id=uuid4(),
+            username="TestUser",
+            email="usermail@mail.ru",
+            hashed_password="hashedpassword",
+            is_active=True,
+            is_admin=is_admin,
+        )
+
+    return _create_user
+
+
+@pytest.fixture
+def article_data_factory():
+    def _create_article(title: str = "test_title", content: str = "test_content"):
+        return ArticleData(
+            title=title,
+            content=content,
+            category=1,
+            image_url="https://example.com/image.png",
+        )
+
+    return _create_article
