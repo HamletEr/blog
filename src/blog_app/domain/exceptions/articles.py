@@ -10,5 +10,5 @@ class PermissionDenied(ArticleError):
     pass
 
 
-class FragmentIsTooShortToSearch(ArticleError):
+class TooShortText(ArticleError):
     pass

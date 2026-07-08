@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from datetime import datetime
+from uuid import UUID
 
 
 @dataclass
@@ -11,6 +13,8 @@ class ArticleData:
 
 @dataclass
 class Article:
-    id: int
+    id: UUID
     is_active: bool
     data: ArticleData
+    created_at: datetime
+    updated_at: datetime

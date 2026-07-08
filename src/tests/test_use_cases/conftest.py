@@ -1,24 +1,19 @@
-from uuid import uuid4
+from datetime import datetime, UTC
+from uuid import uuid4, UUID
 
 import pytest
 
-from blog_app.core.entities.articles import Article, ArticleData
-from blog_app.core.entities.users import User
-from blog_app.core.exceptions.articles import ArticleNotFoundError
-from blog_app.core.repositories.articles import ArticleRepository
+from blog_app.domain.entities.articles import Article, ArticleData
+from blog_app.domain.entities.users import User
+from blog_app.domain.exceptions.articles import ArticleNotFoundError
+from blog_app.domain.repositories.articles import ArticleRepository
 
 
 class FakeArticleRepository(ArticleRepository):
     def __init__(self) -> None:
-        self._articles: dict[int, Article] = {}
-        self._next_id = 1
+        self._articles: dict[UUID, Article] = {}
 
-    def _get_next_id(self) -> int:
-        next_id = self._next_id
-        self._next_id += 1
-        return next_id
-
-    async def get_by_id(self, article_id: int) -> Article | None:
+    async def get_by_id(self, article_id: UUID) -> Article | None:
         if (article_id not in self._articles) or (
             not self._articles[article_id].is_active
         ):
@@ -49,19 +44,23 @@ class FakeArticleRepository(ArticleRepository):
         return result
 
     async def create(self, article_data: ArticleData) -> Article:
-        article_id = self._get_next_id()
+        article_id = uuid4()
         self._articles[article_id] = Article(
-            id=article_id, is_active=True, data=article_data
+            id=article_id,
+            is_active=True,
+            data=article_data,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         return self._articles[article_id]
 
-    async def update(self, article_id: int, article_data: ArticleData) -> Article:
+    async def update(self, article_id: UUID, article_data: ArticleData) -> Article:
         if article_id not in self._articles:
             raise ArticleNotFoundError()
         self._articles[article_id].data = article_data
         return self._articles[article_id]
 
-    async def delete(self, article_id: int) -> None:
+    async def delete(self, article_id: UUID) -> None:
         if article_id not in self._articles:
             raise ArticleNotFoundError()
         self._articles[article_id].is_active = False
