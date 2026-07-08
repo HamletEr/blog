@@ -20,27 +20,22 @@ class FakeArticleRepository(ArticleRepository):
             return None
         return self._articles[article_id]
 
-    async def get_list(self, limit: int | None) -> list[Article]:
+    async def get_list(self, looking_text: str | None, limit: int | None) -> list[Article]:
         result = []
         for article in self._articles.values():
-            if article.is_active:
-                result.append(article)
-                if len(result) == limit:
-                    break
-        return result
-
-    async def get_list_by_text(self, text: str, limit: int | None) -> list[Article]:
-        result = []
-        for article in self._articles.values():
-            if article.is_active:
+            if looking_text:
                 article_data: ArticleData = article.data
                 if (
-                    text.lower() in article_data.title.lower()
-                    or text.lower() in article_data.content.lower()
+                        looking_text.lower() in article_data.title.lower()
+                        or looking_text.lower() in article_data.content.lower()
                 ):
                     result.append(article)
-                if len(result) == limit:
-                    break
+
+            elif article.is_active:
+                result.append(article)
+
+            if len(result) == limit:
+                break
         return result
 
     async def create(self, article_data: ArticleData) -> Article:

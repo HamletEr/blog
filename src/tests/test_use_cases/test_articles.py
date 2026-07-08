@@ -9,7 +9,6 @@ from blog_app.use_cases.articles import (
     DeleteArticleData,
     GetArticleById,
     GetListArticles,
-    GetListByText,
     UpdateArticleData,
 )
 
@@ -112,7 +111,6 @@ async def test_get_article_by_id(repository_fixture, user_factory, article_data_
     assert article.id == article_looking_for.id
 
 
-
 async def test_get_list_articles(repository_fixture, user_factory, article_data_factory):
     admin_user: User = user_factory(is_admin=True)
     common_user: User = user_factory(is_admin=False)
@@ -144,8 +142,8 @@ async def test_get_list_by_text(repository_fixture, user_factory, article_data_f
             )))
 
     with pytest.raises(TooShortText):
-        await GetListByText(repo=repository_fixture, user=common_user).execute(text='te')
+        await GetListArticles(repo=repository_fixture, user=common_user).execute(looking_text='te')
 
-    result_list = await GetListByText(repo=repository_fixture, user=common_user).execute(text='title1')
+    result_list = await GetListArticles(repo=repository_fixture, user=common_user).execute(looking_text='title1')
 
     assert len(result_list) == 1

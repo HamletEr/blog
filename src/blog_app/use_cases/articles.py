@@ -55,15 +55,12 @@ class GetArticleById(BaseArticleUseCase):
 
 
 class GetListArticles(BaseArticleUseCase):
-    async def execute(self, limit: int | None = None) -> list[Article]:
-        return await self.repo.get_list(limit)
-
-
-class GetListByText(BaseArticleUseCase):
-    async def execute(self, text: str, limit: int | None = None) -> list[Article]:
-        if len(text) <= 3:
+    async def execute(
+        self, looking_text: str | None = None, limit: int | None = None
+    ) -> list[Article]:
+        if looking_text is not None and len(looking_text) <= 3:
             raise TooShortText
-        return await self.repo.get_list_by_text(text, limit)
+        return await self.repo.get_list(looking_text, limit)
 
 
 class CreateArticleData(ChangeArticleData):
