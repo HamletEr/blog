@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import String, Text
 
 from blog_app.core.database import Base
@@ -17,6 +19,8 @@ class ArticleModel(Base):
     image_url: Mapped[str | None]
     created_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
+
+    category: Mapped[CategoryArticleModel] = relationship("CategoryArticleModel")
 
 
 class CategoryArticleModel(Base):

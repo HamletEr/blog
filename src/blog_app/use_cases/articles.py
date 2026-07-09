@@ -56,11 +56,16 @@ class GetArticleById(BaseArticleUseCase):
 
 class GetListArticles(BaseArticleUseCase):
     async def execute(
-        self, looking_text: str | None = None, limit: int | None = None
+        self,
+        looking_text: str | None = None,
+        limit_on_page: int | None = None,
+        page: int | None = None,
     ) -> list[Article]:
         if looking_text is not None and len(looking_text) <= 3:
             raise TooShortText
-        return await self.repo.get_list(looking_text, limit)
+        if page and not limit_on_page:
+            page = None
+        return await self.repo.get_list(looking_text, limit_on_page, page)
 
 
 class CreateArticleData(ChangeArticleData):

@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from blog_app.domain.entities.articles import Article, ArticleData
 from blog_app.domain.repositories.articles import ArticleRepository
@@ -41,8 +42,31 @@ class PGArticleRepository(ArticleRepository):
         )
 
     async def get_by_id(self, article_id: UUID) -> Article | None:
-        stmt = select(ArticleModel).where(ArticleModel.id == article_id)
+        stmt = (
+            select(ArticleModel)
+            .where(ArticleModel.id == article_id)
+            .options(joinedload(ArticleModel.category))
+        )
         result = await self._session.execute(stmt)
         article: ArticleModel | None = result.scalar_one_or_none()
 
         return self._model_to_domain(article) if article else None
+
+    async def get_list(
+        self, looking_text: str | None, limit_on_page: int | None, page: int | None
+    ) -> list[Article]:
+        stmt = select(ArticleModel).options(joinedload(ArticleModel.category))
+        if looking_text:
+            stmt = stmt.where(
+                ArticleModel.title.ilike(
+                    f"%{looking_text}%"
+                    or ArticleModel.content.ilike(f"%{looking_text}%")
+                )
+            )
+        if limit_on_page:
+            stmt = stmt.limit(limit_on_page)
+        if page and limit_on_page:
+            stmt = stmt.offset((page - 1) * limit_on_page)
+        articles = await self._session.scalars(stmt)
+
+        return [self._model_to_domain(article) for article in articles]

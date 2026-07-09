@@ -10,7 +10,7 @@ class ArticleRepository(ABC):
 
     @abstractmethod
     async def get_list(
-        self, looking_text: str | None, limit: int | None
+        self, looking_text: str | None, limit_on_page: int | None, page: int | None
     ) -> list[Article]: ...
 
     @abstractmethod

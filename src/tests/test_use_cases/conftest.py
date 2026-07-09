@@ -20,7 +20,7 @@ class FakeArticleRepository(ArticleRepository):
             return None
         return self._articles[article_id]
 
-    async def get_list(self, looking_text: str | None, limit: int | None) -> list[Article]:
+    async def get_list(self, looking_text: str | None, limit_on_page: int | None, page: int | None) -> list[Article]:
         result = []
         for article in self._articles.values():
             if looking_text:
@@ -34,7 +34,7 @@ class FakeArticleRepository(ArticleRepository):
             elif article.is_active:
                 result.append(article)
 
-            if len(result) == limit:
+            if len(result) == limit_on_page:
                 break
         return result
 
