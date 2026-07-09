@@ -7,7 +7,7 @@ from uuid import UUID
 class ArticleData:
     title: str
     content: str
-    category: int | None
+    category_id: int | None
     image_url: str | None
 
 

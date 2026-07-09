@@ -20,7 +20,7 @@ class PGArticleRepository(ArticleRepository):
             data=ArticleData(
                 title=model.title,
                 content=model.content,
-                category=model.category,
+                category_id=model.category_id,
                 image_url=model.image_url,
             ),
             created_at=model.created_at,
@@ -34,7 +34,7 @@ class PGArticleRepository(ArticleRepository):
             is_active=domain.is_active,
             title=domain.data.title,
             content=domain.data.content,
-            category=domain.data.category,
+            category_id=domain.data.category_id,
             image_url=domain.data.image_url,
             created_at=domain.created_at,
             updated_at=domain.updated_at,

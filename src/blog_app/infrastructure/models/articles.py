@@ -13,7 +13,7 @@ class ArticleModel(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     title: Mapped[str] = mapped_column(String(100))
     content: Mapped[str] = mapped_column(Text)
-    category: Mapped[int | None] = mapped_column(foreign_key="categories.id")
+    category_id: Mapped[int | None] = mapped_column(foreign_key="categories.id")
     image_url: Mapped[str | None]
     created_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))

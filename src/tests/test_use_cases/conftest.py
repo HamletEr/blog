@@ -87,7 +87,7 @@ def article_data_factory():
         return ArticleData(
             title=title,
             content=content,
-            category=1,
+            category_id=1,
             image_url="https://example.com/image.png",
         )
 
