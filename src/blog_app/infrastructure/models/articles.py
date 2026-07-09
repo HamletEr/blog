@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import String, Text
 
@@ -11,16 +12,19 @@ from blog_app.core.database import Base
 
 class ArticleModel(Base):
     __tablename__ = "articles"
-    id: Mapped[UUID] = mapped_column(primary_key=True, default_factory=uuid4)
+    id: Mapped[UUID] = mapped_column(primary_key=True, insert_default=uuid4)
     is_active: Mapped[bool] = mapped_column(default=True)
     title: Mapped[str] = mapped_column(String(100))
     content: Mapped[str] = mapped_column(Text)
-    category_id: Mapped[int | None] = mapped_column(foreign_key="categories.id")
     image_url: Mapped[str | None]
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.now(UTC))
-
+    category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"))
     category: Mapped[CategoryArticleModel] = relationship("CategoryArticleModel")
+    created_at: Mapped[datetime] = mapped_column(
+        insert_default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        insert_default=lambda: datetime.now(UTC)
+    )
 
 
 class CategoryArticleModel(Base):

@@ -70,3 +70,13 @@ class PGArticleRepository(ArticleRepository):
         articles = await self._session.scalars(stmt)
 
         return [self._model_to_domain(article) for article in articles]
+
+    # TODO
+    # async def create(self, article_data: ArticleData) -> Article:
+    #     pass
+    #
+    # async def update(self, article_id: UUID, article_data: ArticleData) -> Article:
+    #     pass
+    #
+    # async def delete(self, article_id: UUID) -> None:
+    #     pass

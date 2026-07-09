@@ -68,14 +68,14 @@ class GetListArticles(BaseArticleUseCase):
         return await self.repo.get_list(looking_text, limit_on_page, page)
 
 
-class CreateArticleData(ChangeArticleData):
+class CreateArticle(ChangeArticleData):
     async def execute(self, article_data: ArticleData) -> Article:
         self._permission_required()
         self._check_fields_length(article_data)
         return await self.repo.create(article_data)
 
 
-class UpdateArticleData(ChangeArticleData):
+class UpdateArticle(ChangeArticleData):
     async def execute(self, article_id: UUID, article_data: ArticleData) -> Article:
         self._permission_required()
         self._check_fields_length(article_data)
@@ -83,7 +83,7 @@ class UpdateArticleData(ChangeArticleData):
         return updated_article
 
 
-class DeleteArticleData(ChangeArticleData):
+class DeleteArticle(ChangeArticleData):
     async def execute(self, article_id: UUID) -> None:
         self._permission_required()
         await self.repo.delete(article_id)
