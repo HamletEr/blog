@@ -1,10 +1,11 @@
+from dataclasses import asdict
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
 from blog_app.domain.entities.articles import Article, ArticleData
+from blog_app.domain.exceptions.articles import ArticleNotFoundError
 from blog_app.domain.repositories.articles import ArticleRepository
 from blog_app.infrastructure.models.articles import ArticleModel
 
@@ -28,39 +29,27 @@ class PGArticleRepository(ArticleRepository):
             updated_at=model.updated_at,
         )
 
-    @staticmethod
-    def _domain_to_model(domain: Article) -> ArticleModel:
-        return ArticleModel(
-            id=domain.id,
-            is_active=domain.is_active,
-            title=domain.data.title,
-            content=domain.data.content,
-            category_id=domain.data.category_id,
-            image_url=domain.data.image_url,
-            created_at=domain.created_at,
-            updated_at=domain.updated_at,
-        )
-
-    async def get_by_id(self, article_id: UUID) -> Article | None:
-        stmt = (
-            select(ArticleModel)
-            .where(ArticleModel.id == article_id)
-            .options(joinedload(ArticleModel.category))
+    async def _get_model_by_id(self, article_id: UUID) -> ArticleModel | None:
+        stmt = select(ArticleModel).where(
+            ArticleModel.id == article_id, ArticleModel.is_active.is_(True)
         )
         result = await self._session.execute(stmt)
-        article: ArticleModel | None = result.scalar_one_or_none()
+        return result.scalar_one_or_none()
+
+    async def get_by_id(self, article_id: UUID) -> Article | None:
+        article = await self._get_model_by_id(article_id)
 
         return self._model_to_domain(article) if article else None
 
     async def get_list(
         self, looking_text: str | None, limit_on_page: int | None, page: int | None
     ) -> list[Article]:
-        stmt = select(ArticleModel).options(joinedload(ArticleModel.category))
+        stmt = select(ArticleModel).where(ArticleModel.is_active)
         if looking_text:
             stmt = stmt.where(
-                ArticleModel.title.ilike(
-                    f"%{looking_text}%"
-                    or ArticleModel.content.ilike(f"%{looking_text}%")
+                or_(
+                    ArticleModel.title.ilike(f"%{looking_text}%"),
+                    ArticleModel.content.ilike(f"%{looking_text}%"),
                 )
             )
         if limit_on_page:
@@ -71,12 +60,29 @@ class PGArticleRepository(ArticleRepository):
 
         return [self._model_to_domain(article) for article in articles]
 
-    # TODO
-    # async def create(self, article_data: ArticleData) -> Article:
-    #     pass
-    #
-    # async def update(self, article_id: UUID, article_data: ArticleData) -> Article:
-    #     pass
-    #
-    # async def delete(self, article_id: UUID) -> None:
-    #     pass
+    async def create(self, article_data: ArticleData) -> Article:
+        article = ArticleModel(**asdict(article_data))
+        self._session.add(article)
+        await self._session.flush()
+
+        return self._model_to_domain(article)
+
+    async def update(self, article_id: UUID, article_data: ArticleData) -> Article:
+        article = await self._get_model_by_id(article_id)
+        if not article:
+            raise ArticleNotFoundError()
+
+        article.title = article_data.title
+        article.content = article_data.content
+        article.category_id = article_data.category_id
+        article.image_url = article_data.image_url
+
+        await self._session.flush()
+        return self._model_to_domain(article)
+
+    async def delete(self, article_id: UUID) -> None:
+        article = await self._get_model_by_id(article_id)
+        if not article:
+            raise ArticleNotFoundError()
+        article.is_active = False
+        await self._session.flush()

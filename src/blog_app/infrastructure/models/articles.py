@@ -23,7 +23,7 @@ class ArticleModel(Base):
         insert_default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        insert_default=lambda: datetime.now(UTC)
+        insert_default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
 
