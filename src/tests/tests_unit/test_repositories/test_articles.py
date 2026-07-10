@@ -7,10 +7,9 @@ from blog_app.infrastructure.models.articles import ArticleModel
 from blog_app.infrastructure.repositories.articles import PGArticleRepository
 
 
-async def test_pg_article_repository_adapters(article_model_factory, article_domain_factory):
+async def test_pg_article_repository(article_model_factory):
     session = AsyncMock(AsyncSession)
     article_model = article_model_factory()
-    article_domain = article_domain_factory()
 
     repo = PGArticleRepository(session)
 
