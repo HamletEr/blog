@@ -18,17 +18,17 @@ from blog_app.use_cases.articles import (
 
 
 async def test_anonymous_user_cannot_create_article():
-    repo = AsyncMock(ArticleRepository)
-    article_data = Mock(ArticleData)
+    repo = AsyncMock(spec=ArticleRepository)
+    article_data = Mock(spec=ArticleData)
 
     with pytest.raises(AuthenticationRequired):
         await CreateArticle(repo=repo, user=None).execute(article_data)
 
 
 async def test_get_article_by_id():
-    repo = AsyncMock(ArticleRepository)
-    user = Mock(User)
-    article = Mock(Article)
+    repo = AsyncMock(spec=ArticleRepository)
+    user = Mock(spec=User)
+    article = Mock(spec=Article)
 
     repo.get_by_id.return_value = None
 
@@ -41,9 +41,9 @@ async def test_get_article_by_id():
 
 
 async def test_get_list_articles():
-    repo = AsyncMock(ArticleRepository)
-    user = Mock(User)
-    res_list = [Mock(Article), Mock(Article)]
+    repo = AsyncMock(spec=ArticleRepository)
+    user = Mock(spec=User)
+    res_list = [Mock(spec=Article), Mock(spec=Article)]
     repo.get_list.return_value = res_list
 
     with pytest.raises(TooShortText):
@@ -52,13 +52,13 @@ async def test_get_list_articles():
 
 
 async def test_create_article():
-    repo = AsyncMock(ArticleRepository)
-    user = Mock(User)
+    repo = AsyncMock(spec=ArticleRepository)
+    user = Mock(spec=User)
     user.is_admin = True
-    article_data = Mock(ArticleData)
+    article_data = Mock(spec=ArticleData)
     article_data.title = 'Test Title'
     article_data.content = 't'
-    res_article = Mock(Article)
+    res_article = Mock(spec=Article)
     repo.create.return_value = res_article
 
     with pytest.raises(TooShortText):
@@ -69,12 +69,12 @@ async def test_create_article():
 
 
 async def test_update_article():
-    repo = AsyncMock(ArticleRepository)
-    user = Mock(User)
-    article_data = Mock(ArticleData)
+    repo = AsyncMock(spec=ArticleRepository)
+    user = Mock(spec=User)
+    article_data = Mock(spec=ArticleData)
     article_data.title = 'Test Title'
     article_data.content = 'Test Content'
-    result_article = Mock(Article)
+    result_article = Mock(spec=Article)
     repo.update.return_value = result_article
 
     user.is_admin = False
@@ -86,8 +86,8 @@ async def test_update_article():
 
 
 async def test_delete_article():
-    repo = AsyncMock(ArticleRepository)
-    user = Mock(User)
+    repo = AsyncMock(spec=ArticleRepository)
+    user = Mock(spec=User)
     user.is_admin = True
     repo.delete.return_value = None
 

@@ -14,8 +14,6 @@ from blog_app.domain.exceptions.users import (
     IncorrectPassword,
     PermissionDenied,
     UserAlreadyExists,
-    UserEmailRequired,
-    UserIdRequired,
     UserNotFound,
 )
 from blog_app.domain.repositories.users import UserRepository
@@ -41,17 +39,13 @@ class BaseUserUseCase:
         self.repo = repo
         self.current_user = current_user
 
-    async def get_user_by_id(self, user_id: UUID | None) -> User:
-        if user_id is None:
-            raise UserIdRequired()
+    async def get_user_by_id(self, user_id: UUID) -> User:
         user = await self.repo.get(user_id=user_id)
         if not user:
             raise UserNotFound()
         return user
 
-    async def get_user_by_email(self, email: str | None) -> User | None:
-        if email is None:
-            raise UserEmailRequired()
+    async def get_user_by_email(self, email: str) -> User | None:
         return await self.repo.get(user_email=email)
 
 
