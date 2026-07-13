@@ -12,3 +12,23 @@ class UserNotFound(UserError):
 
 class UserAlreadyExists(UserError):
     pass
+
+
+class EmailAlreadyExists(UserError):
+    pass
+
+
+class UserIdRequired(UserError):
+    pass
+
+
+class UserEmailRequired(UserError):
+    pass
+
+
+class PermissionDenied(UserError):
+    pass
+
+
+class IncorrectPassword(UserError):
+    pass
