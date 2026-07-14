@@ -32,3 +32,7 @@ class PermissionDenied(UserError):
 
 class IncorrectPassword(UserError):
     pass
+
+
+class UserIdOrUserEmailRequired(UserError):
+    pass
