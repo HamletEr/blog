@@ -1,0 +1,36 @@
+[default]
+app_name = "blog_app"
+timezone = "Europe/Moscow"
+version = "0.3"
+debug = false
+log_level = "INFO"
+
+[default.database]
+host = "localhost"
+port = 5432
+
+
+
+[development]
+app_env = "development"
+debug = true
+log_level = "DEBUG"
+
+[development.database]
+name = "dev_blog_db"
+user = "dev_blog_user"
+password = "Strong_password"
+
+
+
+[production]
+app_env = "production"
+debug = false
+log_level = "WARNING"
+
+[production.database]
+host = "real_db_host"
+port = 5432
+name = "real_db_name"
+user = "real_db_user"
+password = "Very_strong_password"
