@@ -77,6 +77,8 @@ class LoginUserUseCase(BaseUserUseCase):
             user_data.password, user_with_email.hashed_password
         ):
             raise UserNotFound()
+        if not user_with_email.is_active:
+            raise PermissionDenied()
         return user_with_email
 
 
@@ -93,8 +95,11 @@ class ChangeEmailUseCase(BaseUserUseCase):
         self, user_data: ChangeUserEmailCommand, password_service: PasswordHasher
     ) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
+        self.current_user: User
         user = await self.get_user_by_id(user_data.id)
-        if not await password_service.verify(user_data.password, user.hashed_password):
+        if not self.current_user.is_admin and not await password_service.verify(
+            user_data.password, user.hashed_password
+        ):
             raise IncorrectPassword()
         user_with_new_email = await self.get_user_by_email(email=user_data.email)
         if user_with_new_email:
@@ -108,9 +113,13 @@ class ChangePasswordUseCase(BaseUserUseCase):
         self, user_data: ChangeUserPasswordCommand, password_service: PasswordHasher
     ) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
+        self.current_user: User
         user = await self.get_user_by_id(user_data.id)
-        if not await password_service.verify(
-            user_data.old_password, user.hashed_password
+        if not self.current_user.is_admin and (
+            not user_data.old_password
+            or not await password_service.verify(
+                user_data.old_password, user.hashed_password
+            )
         ):
             raise IncorrectPassword()
         user.hashed_password = await password_service.hash(user_data.new_password)
@@ -119,7 +128,8 @@ class ChangePasswordUseCase(BaseUserUseCase):
 
 class ChangeUserActiveStatusUseCase(BaseUserUseCase):
     async def execute(self, user_id: UUID) -> User:
-        check_user_can_modify_user(self.current_user, user_id)
+        if not self.current_user or not self.current_user.is_admin:
+            raise PermissionDenied()
         user = await self.get_user_by_id(user_id)
         user.is_active = not user.is_active
         return await self.repo.update(user)

@@ -18,7 +18,7 @@ class ArticleModel(Base):
     content: Mapped[str] = mapped_column(Text)
     image_url: Mapped[str | None]
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"))
-    category: Mapped[CategoryArticleModel] = relationship("CategoryArticleModel")
+    category: Mapped[CategoryArticleModel | None] = relationship("CategoryArticleModel")
     created_at: Mapped[datetime] = mapped_column(
         insert_default=lambda: datetime.now(UTC)
     )

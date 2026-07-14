@@ -1,10 +1,13 @@
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from blog_app.domain.entities.users import User
 from blog_app.domain.exceptions.users import (
+    EmailAlreadyExists,
+    UserAlreadyExists,
     UserIdOrUserEmailRequired,
     UserIdRequired,
     UserNotFound,
@@ -52,7 +55,14 @@ class PGUserRepository(UserRepository):
             is_admin=user.is_admin,
         )
         self._session.add(user_model)
-        await self._session.flush()
+        try:
+            await self._session.flush()
+        except IntegrityError as err:
+            if "uq_users_email" in str(err.orig):
+                raise UserAlreadyExists(
+                    f"User with {user.email} already exists."
+                ) from err
+            raise
         return self._model_to_domain(user_model)
 
     async def update(self, user: User) -> User:
@@ -71,5 +81,12 @@ class PGUserRepository(UserRepository):
         user_in_db.is_active = user.is_active
         user_in_db.is_admin = user.is_admin
 
-        await self._session.flush()
+        try:
+            await self._session.flush()
+        except IntegrityError as err:
+            if "uq_users_email" in str(err.orig):
+                raise EmailAlreadyExists(
+                    f"User with {user.email} already exists."
+                ) from err
+            raise
         return self._model_to_domain(user_in_db)

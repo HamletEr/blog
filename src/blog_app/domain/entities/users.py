@@ -32,7 +32,7 @@ class ChangeUserEmailCommand:
 @dataclass(frozen=True)
 class ChangeUserPasswordCommand:
     id: UUID
-    old_password: str
+    old_password: str | None
     new_password: str
 
 

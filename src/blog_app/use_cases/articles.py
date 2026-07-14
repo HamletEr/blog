@@ -4,6 +4,8 @@ from blog_app.domain.entities.articles import Article, ArticleData
 from blog_app.domain.entities.users import User
 from blog_app.domain.exceptions.articles import (
     ArticleNotFoundError,
+    IncorrectLimitOnPage,
+    IncorrectPageNumber,
     PermissionDenied,
     TooShortText,
 )
@@ -41,6 +43,18 @@ def validate_looking_text(text: str) -> None:
         )
 
 
+def validate_page_and_limit_on_page(
+    page: int | None, limit_on_page: int | None
+) -> tuple[int | None, int | None]:
+    if page and not limit_on_page:
+        page = None
+    if limit_on_page is not None and limit_on_page <= 0:
+        raise IncorrectLimitOnPage("Limit in page must be greater than 0")
+    if page is not None and page <= 0:
+        raise IncorrectPageNumber("Page must be greater than 0")
+    return page, limit_on_page
+
+
 class BaseArticleUseCase:
     def __init__(self, repo: ArticleRepository, user: User | None) -> None:
         self.repo = repo
@@ -51,7 +65,7 @@ class GetArticleById(BaseArticleUseCase):
     async def execute(self, article_id: UUID) -> Article:
         article = await self.repo.get_by_id(article_id)
         if article is None:
-            raise ArticleNotFoundError
+            raise ArticleNotFoundError()
         return article
 
 
@@ -64,8 +78,7 @@ class GetListArticles(BaseArticleUseCase):
     ) -> list[Article]:
         if looking_text is not None:
             validate_looking_text(looking_text)
-        if page and not limit_on_page:
-            page = None
+        page, limit_on_page = validate_page_and_limit_on_page(page, limit_on_page)
         return await self.repo.get_list(looking_text, limit_on_page, page)
 
 

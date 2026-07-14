@@ -12,3 +12,11 @@ class PermissionDenied(ArticleError):
 
 class TooShortText(ArticleError):
     pass
+
+
+class IncorrectLimitOnPage(ArticleError):
+    pass
+
+
+class IncorrectPageNumber(ArticleError):
+    pass
