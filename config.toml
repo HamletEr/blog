@@ -1,0 +1,19 @@
+[default]
+app_name = "blog_app"
+timezone = "Europe/Moscow"
+version = "0.3"
+debug = false
+log_level = "INFO"
+
+
+[development]
+dynaconf_merge = true
+app_env = "development"
+debug = true
+log_level = "DEBUG"
+
+
+[production]
+app_env = "production"
+debug = false
+log_level = "WARNING"

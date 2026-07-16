@@ -25,7 +25,7 @@ def make_pg_options(
 
 
 async_engine = create_async_engine(
-    url=settings.db_dsn,
+    url=settings.db_dsn_async,
     echo=settings.debug,
     connect_args={"server_settings": make_pg_options()},
 )
