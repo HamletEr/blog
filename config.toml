@@ -1,7 +1,7 @@
 [default]
-app_name = "blog_app"
+app_name = "blog-app"
+version = "0.5.0"
 timezone = "Europe/Moscow"
-version = "0.3"
 debug = false
 log_level = "INFO"
 

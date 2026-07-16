@@ -1,16 +1,20 @@
 ROOT=src
 
-.PHONY: help rlint rfmt types check tests
+.PHONY: help rlint rfmt types check tests db-up migrate migrate-current db-down db-migrate-dev
 
 help:
-	@echo "   Tool   |   Command   |   Description"
-	@echo "   Ruff      make rlint     'uv run ruff check . --fix'"
-	@echo "   Ruff      make rfmt      'uv run ruff format .'"
-	@echo ""
-	@echo "   Mypy      make types     'uv run mypy .'"
-	@echo ""
-	@echo "    *        make check     'rlint rfmt types' - Run all checks"
-	@echo "  pytest     make tests      'uv run pytest -v' + coverage percent"
+	@echo "       Tool          |       Command        |         Description"
+	@echo "---------------------|----------------------|---------------------------------------------"
+	@echo "       Ruff          |      make rlint      |    'uv run ruff check . --fix'"
+	@echo "       Ruff          |      make rfmt       |    'uv run ruff format .'"
+	@echo "                     |                      |   "
+	@echo "       Mypy          |      make types      |    'uv run mypy .'"
+	@echo "                     |                      |   "
+	@echo "        *            |      make check      |    'rlint rfmt types' - Run all checks"
+	@echo "                     |                      |   "
+	@echo "      pytest         |      make tests      |    'uv run pytest -v' + coverage percent"
+	@echo "                     |                      |   "
+	@echo " alembic + compose   | make db-migrate-dev  |    'make alembic migrations in dev db'"
 
 rlint:
 	uv run ruff check $(ROOT) --fix
@@ -25,3 +29,17 @@ check: rlint rfmt types
 
 tests:
 	uv run pytest -v --cov --cov-branch --cov-report=term-missing
+
+db-up:
+	docker compose up -d blog_app_db
+
+migrate:
+	alembic upgrade head
+
+migrate-current:
+	alembic current
+
+db-down:
+	docker compose down
+
+db-migrate-dev: db-up migrate migrate-current db-down

@@ -37,6 +37,7 @@ def get_db_dsn(async_: bool = True) -> str:
 
 class Settings(BaseSettings):
     app_name: str
+    app_version: str
     timezone: str
     zone_info: ZoneInfo
     app_env: str
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
 
 settings = Settings(
     app_name=_settings.app_name,
+    app_version=_settings.version,
     timezone=_settings.timezone,
     zone_info=ZoneInfo(_settings.timezone),
     app_env=_settings.app_env,

@@ -1,6 +1,6 @@
 [project]
 name = "blog"
-version = "0.1.0"
+version = "0.5.0"
 requires-python = "==3.12.13"
 dependencies = [
     "alembic==1.18.5",
@@ -58,9 +58,10 @@ python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 mypy_path = ["src/blog_app/"]
-exclude = "src/test/*"
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
 asyncio_mode = "auto"
 
 [tool.coverage.run]

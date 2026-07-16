@@ -1,4 +1,17 @@
 services:
+  blog_app:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      BLOG_APP_DATABASE__HOST: blog_app_db
+    depends_on:
+      blog_app_db:
+        condition: service_healthy
+
   blog_app_db:
     image: postgres:18-bookworm
     ports:
