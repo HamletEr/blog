@@ -11,6 +11,12 @@ services:
     depends_on:
       blog_app_db:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS --max-time 2 http://localhost:8000/api/v1/health/live" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
   blog_app_db:
     image: postgres:18-bookworm

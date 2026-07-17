@@ -36,23 +36,14 @@ def get_db_dsn(async_: bool = True) -> str:
 
 
 class Settings(BaseSettings):
-    app_name: str
-    app_version: str
-    timezone: str
-    zone_info: ZoneInfo
-    app_env: str
-    db_dsn_async: str
-    db_dsn_sync: str
-    debug: bool
+    app_name: str = _settings.app_name
+    app_version: str = _settings.version
+    timezone: str = _settings.timezone
+    zone_info: ZoneInfo = ZoneInfo(_settings.timezone)
+    app_env: str = _settings.app_env
+    db_dsn_async: str = get_db_dsn(async_=True)
+    db_dsn_sync: str = get_db_dsn(async_=False)
+    debug: bool = _settings.debug
 
 
-settings = Settings(
-    app_name=_settings.app_name,
-    app_version=_settings.version,
-    timezone=_settings.timezone,
-    zone_info=ZoneInfo(_settings.timezone),
-    app_env=_settings.app_env,
-    db_dsn_async=get_db_dsn(),
-    db_dsn_sync=get_db_dsn(async_=False),
-    debug=_settings.debug,
-)
+settings = Settings()

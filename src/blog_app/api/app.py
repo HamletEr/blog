@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from blog_app.api.v1.router import main_router
 from blog_app.core.config import settings
 
 
@@ -10,4 +11,6 @@ def create_app() -> FastAPI:
         debug=settings.debug,
         redoc_url=None,
     )
+
+    app.include_router(main_router)
     return app
