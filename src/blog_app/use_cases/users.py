@@ -41,9 +41,9 @@ def check_user_can_modify_user(
 def check_password_complexity(
     password: str, validator: PasswordComplexityValidator
 ) -> None:
-    complex_password, violations = validator.is_complexity_password(password)
-    if violations:
-        raise TooEasyPassword(" ".join(violations))
+    errors = validator.get_violations(password)
+    if errors:
+        raise TooEasyPassword(" ".join(errors))
 
 
 class BaseUserUseCase:

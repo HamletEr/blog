@@ -11,6 +11,4 @@ class PasswordHasher(ABC):
 
 class PasswordComplexityValidator(ABC):
     @abstractmethod
-    def is_complexity_password(
-        self, password: str
-    ) -> tuple[bool, list[str] | None]: ...
+    def get_violations(self, password: str) -> list[str]: ...
