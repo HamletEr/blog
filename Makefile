@@ -1,6 +1,6 @@
 ROOT=src
 
-.PHONY: help rlint rfmt types check tests db-up migrate migrate-current db-down db-migrate-dev
+.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down db-migrate-dev up
 
 help:
 	@echo "       Tool          |       Command        |         Description"
@@ -14,6 +14,9 @@ help:
 	@echo "                     |                      |   "
 	@echo "      pytest         |      make tests      |    'uv run pytest -v' + coverage percent"
 	@echo "                     |                      |   "
+	@echo "      docker         |      make up         |   "
+	@echo "      docker         |      make down       |    'docker compose up -d'"
+	@echo "                     |                      |    'docker compose down'"
 	@echo " alembic + compose   | make db-migrate-dev  |    'make alembic migrations in dev db'"
 
 rlint:
@@ -39,7 +42,10 @@ migrate:
 migrate-current:
 	alembic current
 
-db-down:
+up:
+	docker compose up -d
+
+down:
 	docker compose down
 
-db-migrate-dev: db-up migrate migrate-current db-down
+db-migrate-dev: db-up migrate migrate-current down
