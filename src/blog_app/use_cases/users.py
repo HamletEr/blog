@@ -13,11 +13,15 @@ from blog_app.domain.exceptions.users import (
     EmailAlreadyExists,
     IncorrectPassword,
     PermissionDenied,
+    TooEasyPassword,
     UserAlreadyExists,
     UserNotFound,
 )
 from blog_app.domain.repositories.users import UserRepository
-from blog_app.domain.services.passwords import PasswordHasher
+from blog_app.domain.services.passwords import (
+    PasswordComplexityValidator,
+    PasswordHasher,
+)
 
 
 def get_authenticated_user(user: User | None) -> User:
@@ -32,6 +36,14 @@ def check_user_can_modify_user(
     user = get_authenticated_user(current_user)
     if not (user.is_admin or (user.id == modified_user_id)):
         raise PermissionDenied()
+
+
+def check_password_complexity(
+    password: str, validator: PasswordComplexityValidator
+) -> None:
+    complex_password, violations = validator.is_complexity_password(password)
+    if violations:
+        raise TooEasyPassword(" ".join(violations))
 
 
 class BaseUserUseCase:
@@ -51,16 +63,20 @@ class BaseUserUseCase:
 
 class CreateUserUseCase(BaseUserUseCase):
     async def execute(
-        self, user_data: CreateUserCommand, password_service: PasswordHasher
+        self,
+        user_data: CreateUserCommand,
+        password_hasher: PasswordHasher,
+        password_complexity_validator: PasswordComplexityValidator,
     ) -> User:
         user_with_email = await self.get_user_by_email(email=user_data.email)
         if user_with_email:
             raise UserAlreadyExists(user_data.email)
+        check_password_complexity(user_data.password, password_complexity_validator)
         raw_user = User(
             id=None,
             username=user_data.username,
             email=user_data.email,
-            hashed_password=await password_service.hash(user_data.password),
+            hashed_password=await password_hasher.hash(user_data.password),
             is_active=True,
             is_admin=False,
             registered_at=None,
@@ -70,10 +86,10 @@ class CreateUserUseCase(BaseUserUseCase):
 
 class LoginUserUseCase(BaseUserUseCase):
     async def execute(
-        self, user_data: LoginUserCommand, password_service: PasswordHasher
+        self, user_data: LoginUserCommand, password_hasher: PasswordHasher
     ) -> User:
         user_with_email = await self.get_user_by_email(email=user_data.email)
-        if not user_with_email or not await password_service.verify(
+        if not user_with_email or not await password_hasher.verify(
             user_data.password, user_with_email.hashed_password
         ):
             raise UserNotFound()
@@ -92,12 +108,12 @@ class ChangeUsernameUseCase(BaseUserUseCase):
 
 class ChangeEmailUseCase(BaseUserUseCase):
     async def execute(
-        self, user_data: ChangeUserEmailCommand, password_service: PasswordHasher
+        self, user_data: ChangeUserEmailCommand, password_hasher: PasswordHasher
     ) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
         self.current_user: User
         user = await self.get_user_by_id(user_data.id)
-        if not self.current_user.is_admin and not await password_service.verify(
+        if not self.current_user.is_admin and not await password_hasher.verify(
             user_data.password, user.hashed_password
         ):
             raise IncorrectPassword()
@@ -110,19 +126,23 @@ class ChangeEmailUseCase(BaseUserUseCase):
 
 class ChangePasswordUseCase(BaseUserUseCase):
     async def execute(
-        self, user_data: ChangeUserPasswordCommand, password_service: PasswordHasher
+        self,
+        user_data: ChangeUserPasswordCommand,
+        password_hasher: PasswordHasher,
+        password_complexity_validator: PasswordComplexityValidator,
     ) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
         self.current_user: User
         user = await self.get_user_by_id(user_data.id)
         if not self.current_user.is_admin and (
             not user_data.old_password
-            or not await password_service.verify(
+            or not await password_hasher.verify(
                 user_data.old_password, user.hashed_password
             )
         ):
             raise IncorrectPassword()
-        user.hashed_password = await password_service.hash(user_data.new_password)
+        check_password_complexity(user_data.new_password, password_complexity_validator)
+        user.hashed_password = await password_hasher.hash(user_data.new_password)
         return await self.repo.update(user)
 
 

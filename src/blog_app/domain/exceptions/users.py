@@ -36,3 +36,7 @@ class IncorrectPassword(UserError):
 
 class UserIdOrUserEmailRequired(UserError):
     pass
+
+
+class TooEasyPassword(UserError):
+    pass
