@@ -62,21 +62,29 @@ class BaseUserUseCase:
 
 
 class CreateUserUseCase(BaseUserUseCase):
-    async def execute(
+    def __init__(
         self,
-        user_data: CreateUserCommand,
+        repo: UserRepository,
         password_hasher: PasswordHasher,
         password_complexity_validator: PasswordComplexityValidator,
-    ) -> User:
+        current_user: User | None = None,
+    ) -> None:
+        super().__init__(repo, current_user)
+        self.password_hasher = password_hasher
+        self.password_complexity_validator = password_complexity_validator
+
+    async def execute(self, user_data: CreateUserCommand) -> User:
         user_with_email = await self.get_user_by_email(email=user_data.email)
         if user_with_email:
             raise UserAlreadyExists(user_data.email)
-        check_password_complexity(user_data.password, password_complexity_validator)
+        check_password_complexity(
+            user_data.password, self.password_complexity_validator
+        )
         raw_user = User(
             id=None,
             username=user_data.username,
             email=user_data.email,
-            hashed_password=await password_hasher.hash(user_data.password),
+            hashed_password=await self.password_hasher.hash(user_data.password),
             is_active=True,
             is_admin=False,
             registered_at=None,
@@ -85,11 +93,18 @@ class CreateUserUseCase(BaseUserUseCase):
 
 
 class LoginUserUseCase(BaseUserUseCase):
-    async def execute(
-        self, user_data: LoginUserCommand, password_hasher: PasswordHasher
-    ) -> User:
+    def __init__(
+        self,
+        repo: UserRepository,
+        password_hasher: PasswordHasher,
+        current_user: User | None = None,
+    ) -> None:
+        super().__init__(repo, current_user)
+        self.password_hasher = password_hasher
+
+    async def execute(self, user_data: LoginUserCommand) -> User:
         user_with_email = await self.get_user_by_email(email=user_data.email)
-        if not user_with_email or not await password_hasher.verify(
+        if not user_with_email or not await self.password_hasher.verify(
             user_data.password, user_with_email.hashed_password
         ):
             raise UserNotFound()
@@ -107,13 +122,20 @@ class ChangeUsernameUseCase(BaseUserUseCase):
 
 
 class ChangeEmailUseCase(BaseUserUseCase):
-    async def execute(
-        self, user_data: ChangeUserEmailCommand, password_hasher: PasswordHasher
-    ) -> User:
+    def __init__(
+        self,
+        repo: UserRepository,
+        password_hasher: PasswordHasher,
+        current_user: User | None = None,
+    ) -> None:
+        super().__init__(repo, current_user)
+        self.password_hasher = password_hasher
+
+    async def execute(self, user_data: ChangeUserEmailCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
         self.current_user: User
         user = await self.get_user_by_id(user_data.id)
-        if not self.current_user.is_admin and not await password_hasher.verify(
+        if not self.current_user.is_admin and not await self.password_hasher.verify(
             user_data.password, user.hashed_password
         ):
             raise IncorrectPassword()
@@ -125,24 +147,32 @@ class ChangeEmailUseCase(BaseUserUseCase):
 
 
 class ChangePasswordUseCase(BaseUserUseCase):
-    async def execute(
+    def __init__(
         self,
-        user_data: ChangeUserPasswordCommand,
+        repo: UserRepository,
         password_hasher: PasswordHasher,
         password_complexity_validator: PasswordComplexityValidator,
-    ) -> User:
+        current_user: User | None = None,
+    ) -> None:
+        super().__init__(repo, current_user)
+        self.password_hasher = password_hasher
+        self.password_complexity_validator = password_complexity_validator
+
+    async def execute(self, user_data: ChangeUserPasswordCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
         self.current_user: User
         user = await self.get_user_by_id(user_data.id)
         if not self.current_user.is_admin and (
             not user_data.old_password
-            or not await password_hasher.verify(
+            or not await self.password_hasher.verify(
                 user_data.old_password, user.hashed_password
             )
         ):
             raise IncorrectPassword()
-        check_password_complexity(user_data.new_password, password_complexity_validator)
-        user.hashed_password = await password_hasher.hash(user_data.new_password)
+        check_password_complexity(
+            user_data.new_password, self.password_complexity_validator
+        )
+        user.hashed_password = await self.password_hasher.hash(user_data.new_password)
         return await self.repo.update(user)
 
 

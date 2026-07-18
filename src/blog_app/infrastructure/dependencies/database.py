@@ -1,11 +1,13 @@
 from collections.abc import AsyncGenerator
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from blog_app.core.database import AsyncSessionLocal
 
 
-async def db_session() -> AsyncGenerator[AsyncSession]:
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -13,3 +15,6 @@ async def db_session() -> AsyncGenerator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
+
+
+DbSessionDep = Annotated[AsyncSession, Depends(get_db_session)]
