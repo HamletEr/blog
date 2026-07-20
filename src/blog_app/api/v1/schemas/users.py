@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Any
 
 from pydantic import (
@@ -5,6 +6,7 @@ from pydantic import (
     AfterValidator,
     BaseModel,
     BeforeValidator,
+    ConfigDict,
     EmailStr,
     Field,
 )
@@ -56,8 +58,11 @@ class UserChangeEmail(BaseModel):
 
 
 class UserInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID4
     username: Username
     email: NormalizedEmail
     is_active: bool
     is_admin: bool
+    registered_at: datetime
