@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     db_dsn_async: str = get_db_dsn(async_=True)
     db_dsn_sync: str = get_db_dsn(async_=False)
     debug: bool = _settings.debug
+    jwt_algorithm: str = _settings.jwt.algorithm
+    jwt_access_ttl_minutes: int = int(_settings.jwt.access_token_expire_minutes)
+    jwt_refresh_ttl_minutes: int = int(_settings.jwt.refresh_token_expire_minutes)
+    jwt_access_secret: str = _settings.jwt.access_token_secret
+    jwt_refresh_secret: str = _settings.jwt.refresh_token_secret
 
 
 settings = Settings()
