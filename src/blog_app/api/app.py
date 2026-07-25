@@ -1,7 +1,21 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from redis.asyncio import Redis
 
 from blog_app.api.v1.router import main_router
 from blog_app.core.config import settings
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    redis = Redis.from_url(settings.redis_dsn, decode_responses=True)
+    app.state.redis = redis
+    try:
+        yield
+    finally:
+        await redis.aclose()
 
 
 def create_app() -> FastAPI:
@@ -10,6 +24,7 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         debug=settings.debug,
         redoc_url=None,
+        lifespan=lifespan,
     )
 
     app.include_router(main_router)
