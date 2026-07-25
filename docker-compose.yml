@@ -8,8 +8,11 @@ services:
       - .env
     environment:
       BLOG_APP_DATABASE__HOST: blog_app_db
+      BLOG_APP_REDIS__HOST: blog_app_redis
     depends_on:
       blog_app_db:
+        condition: service_healthy
+      blog_app_redis:
         condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS --max-time 2 http://localhost:8000/api/v1/health/live" ]
@@ -35,5 +38,19 @@ services:
       retries: 5
       start_period: 30s
 
+  blog_app_redis:
+    image: redis:8-bookworm
+    ports:
+      - "${BLOG_APP_REDIS__PORT}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
 volumes:
   postgres_data:
+  redis_data:

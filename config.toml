@@ -5,6 +5,11 @@ timezone = "Europe/Moscow"
 debug = false
 log_level = "INFO"
 
+[default.redis]
+host = "localhost"
+port = 6379
+db = 0
+
 
 [development]
 dynaconf_merge = true
