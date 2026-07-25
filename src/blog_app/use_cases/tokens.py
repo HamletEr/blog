@@ -2,6 +2,7 @@ from uuid import UUID, uuid4
 
 from blog_app.domain.entities.enums import TokenType
 from blog_app.domain.entities.tokens import TokenPair
+from blog_app.domain.entities.users import User
 from blog_app.domain.exceptions.tokens import InvalidToken
 from blog_app.domain.exceptions.users import PermissionDenied, UserNotFound
 from blog_app.domain.repositories.tokens import RefreshTokenRepository
@@ -121,3 +122,20 @@ class RevokeRefreshTokenUseCase(BaseTokenUseCase):
         )
         token_id = UUID(token_payload["jti"])
         await self.refresh_token_repo.revoke(token_id)
+
+
+class GetCurrentUserByAccessTokenUseCase(BaseTokenUseCase):
+    def __init__(self, token_service: TokenService, user_repo: UserRepository) -> None:
+        super().__init__(token_service)
+        self.user_repo = user_repo
+
+    async def execute(self, access_token: str) -> User:
+        token_payload = self.token_service.decode_token(
+            access_token,
+            TokenType.ACCESS,
+        )
+        user_id = UUID(token_payload["sub"])
+        user = await self.user_repo.get(user_id=user_id)
+        if not user or not user.is_active:
+            raise UserNotFound()
+        return user

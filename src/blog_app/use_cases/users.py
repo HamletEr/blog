@@ -47,9 +47,8 @@ def check_password_complexity(
 
 
 class BaseUserUseCase:
-    def __init__(self, repo: UserRepository, current_user: User | None = None):
+    def __init__(self, repo: UserRepository):
         self.repo = repo
-        self.current_user = current_user
 
     async def get_user_by_id(self, user_id: UUID) -> User:
         user = await self.repo.get(user_id=user_id)
@@ -67,9 +66,8 @@ class CreateUserUseCase(BaseUserUseCase):
         repo: UserRepository,
         password_hasher: PasswordHasher,
         password_complexity_validator: PasswordComplexityValidator,
-        current_user: User | None = None,
     ) -> None:
-        super().__init__(repo, current_user)
+        super().__init__(repo)
         self.password_hasher = password_hasher
         self.password_complexity_validator = password_complexity_validator
 
@@ -97,9 +95,8 @@ class LoginUserUseCase(BaseUserUseCase):
         self,
         repo: UserRepository,
         password_hasher: PasswordHasher,
-        current_user: User | None = None,
     ) -> None:
-        super().__init__(repo, current_user)
+        super().__init__(repo)
         self.password_hasher = password_hasher
 
     async def execute(self, user_data: LoginUserCommand) -> User:
@@ -114,6 +111,14 @@ class LoginUserUseCase(BaseUserUseCase):
 
 
 class ChangeUsernameUseCase(BaseUserUseCase):
+    def __init__(
+        self,
+        repo: UserRepository,
+        current_user: User | None = None,
+    ) -> None:
+        super().__init__(repo)
+        self.current_user = current_user
+
     async def execute(self, user_data: ChangeUserUsernameCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
         user = await self.get_user_by_id(user_data.id)
@@ -128,14 +133,15 @@ class ChangeEmailUseCase(BaseUserUseCase):
         password_hasher: PasswordHasher,
         current_user: User | None = None,
     ) -> None:
-        super().__init__(repo, current_user)
+        super().__init__(repo)
+        self.current_user = current_user
         self.password_hasher = password_hasher
 
     async def execute(self, user_data: ChangeUserEmailCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
-        self.current_user: User
+        current_user = get_authenticated_user(self.current_user)
         user = await self.get_user_by_id(user_data.id)
-        if not self.current_user.is_admin and not await self.password_hasher.verify(
+        if not current_user.is_admin and not await self.password_hasher.verify(
             user_data.password, user.hashed_password
         ):
             raise IncorrectPassword()
@@ -154,15 +160,16 @@ class ChangePasswordUseCase(BaseUserUseCase):
         password_complexity_validator: PasswordComplexityValidator,
         current_user: User | None = None,
     ) -> None:
-        super().__init__(repo, current_user)
+        super().__init__(repo)
+        self.current_user = current_user
         self.password_hasher = password_hasher
         self.password_complexity_validator = password_complexity_validator
 
     async def execute(self, user_data: ChangeUserPasswordCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
-        self.current_user: User
+        current_user = get_authenticated_user(self.current_user)
         user = await self.get_user_by_id(user_data.id)
-        if not self.current_user.is_admin and (
+        if not current_user.is_admin and (
             not user_data.old_password
             or not await self.password_hasher.verify(
                 user_data.old_password, user.hashed_password
@@ -177,6 +184,14 @@ class ChangePasswordUseCase(BaseUserUseCase):
 
 
 class ChangeUserActiveStatusUseCase(BaseUserUseCase):
+    def __init__(
+        self,
+        repo: UserRepository,
+        current_user: User | None = None,
+    ) -> None:
+        super().__init__(repo)
+        self.current_user = current_user
+
     async def execute(self, user_id: UUID) -> User:
         if not self.current_user or not self.current_user.is_admin:
             raise PermissionDenied()
