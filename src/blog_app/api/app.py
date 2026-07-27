@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from redis.asyncio import Redis
 
+from blog_app.api.middleware import auth_middleware
 from blog_app.api.v1.router import main_router
 from blog_app.core.config import settings
 
@@ -27,5 +28,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.middleware("http")(auth_middleware)
     app.include_router(main_router)
     return app

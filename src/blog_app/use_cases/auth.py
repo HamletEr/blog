@@ -2,7 +2,11 @@ from uuid import UUID
 
 from blog_app.domain.entities.tokens import AuthResult
 from blog_app.domain.entities.users import CreateUserCommand, LoginUserCommand, User
-from blog_app.domain.exceptions.users import UserIdRequired, UserNotFound
+from blog_app.domain.exceptions.users import (
+    PermissionDenied,
+    UserIdRequired,
+    UserNotFound,
+)
 from blog_app.domain.repositories.user_cache import UserCacheRepository
 from blog_app.domain.repositories.users import UserRepository
 from blog_app.use_cases.tokens import IssueTokenPairUseCase
@@ -61,11 +65,15 @@ class ResolveCurrentUserUseCase:
     async def execute(self, user_id: UUID) -> User:
         user = await self.user_cache_repo.get(user_id)
         if user is not None:
+            if not user.is_active:
+                raise PermissionDenied()
             return user
 
         user = await self.user_repo.get(user_id=user_id)
         if user is None:
             raise UserNotFound()
+        if not user.is_active:
+            raise PermissionDenied()
 
         await self.user_cache_repo.save(user)
         return user

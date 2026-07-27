@@ -1,6 +1,6 @@
 ROOT=src
 
-.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down db-migrate-dev up run-dev
+.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down db-migrate-dev up up-dev
 
 help:
 	@echo "       Tool           |       Command        |         Description"
@@ -17,7 +17,8 @@ help:
 	@echo "      docker          |  make up             |    'docker compose up -d'"
 	@echo "      docker          |  make down           |    'docker compose down'"
 	@echo "                      |                      |    "
-	@echo " uvicorn + db(docker) |  make run-dev        |    'run local uvicorn + db in docker compose'"
+	@echo " uvicorn + db + redis |  make up-dev         |    'run local uvicorn + db & redis in docker compose'"
+	@echo "       (docker)       |                      |    "
 	@echo "                      |                      |    "
 	@echo " alembic + db(docker) |  make db-migrate-dev |    'make alembic migrations in dev db'"
 
@@ -52,5 +53,5 @@ down:
 
 db-migrate-dev: db-up migrate migrate-current down
 
-run-dev:
-	make db-up && uv run uvicorn --app-dir src blog_app.main:app --reload
+up-dev:
+	docker compose up -d blog_app_db blog_app_redis && uv run uvicorn --app-dir src blog_app.main:app --reload
