@@ -49,18 +49,3 @@ def clear_auth_cookies(response: Response, *, secure: bool) -> None:
         secure=secure,
         path="/",
     )
-
-
-r = Response()
-
-
-print(r)
-
-r.set_cookie(
-    key=ACCESS_TOKEN_COOKIE_KEY,
-    value="secret",
-    httponly=True,
-    samesite="lax",
-    secure=True,
-    path="/",
-)

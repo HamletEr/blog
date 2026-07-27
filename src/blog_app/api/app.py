@@ -7,6 +7,7 @@ from redis.asyncio import Redis
 from blog_app.api.middleware import auth_middleware
 from blog_app.api.v1.router import main_router
 from blog_app.core.config import settings
+from blog_app.core.database import async_engine
 
 
 @asynccontextmanager
@@ -17,6 +18,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         yield
     finally:
         await redis.aclose()
+        await async_engine.dispose()
 
 
 def create_app() -> FastAPI:
