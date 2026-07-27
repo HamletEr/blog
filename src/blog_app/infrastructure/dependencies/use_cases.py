@@ -4,6 +4,7 @@ from fastapi import Depends
 
 from blog_app.infrastructure.dependencies.repositories import (
     RefreshTokenRepDep,
+    UserCacheRepDep,
     UserRepDep,
 )
 from blog_app.infrastructure.dependencies.services.jwt_service import JWTServiceDep
@@ -12,8 +13,10 @@ from blog_app.infrastructure.dependencies.services.passwords import (
     PasswordHasherDep,
 )
 from blog_app.use_cases.auth import (
+    InvalidateUserCacheUseCase,
     LoginAndIssueTokensUseCase,
     RegisterAndIssueTokensUseCase,
+    ResolveCurrentUserUseCase,
 )
 from blog_app.use_cases.tokens import (
     GetCurrentUserByAccessTokenUseCase,
@@ -156,4 +159,32 @@ def get_login_and_issue_tokens_use_case(
 LoginAndIssueTokensUseCaseDep = Annotated[
     LoginAndIssueTokensUseCase,
     Depends(get_login_and_issue_tokens_use_case),
+]
+
+
+def get_resolve_current_user_use_case(
+    repo: UserRepDep,
+    user_cache_repo: UserCacheRepDep,
+) -> ResolveCurrentUserUseCase:
+    return ResolveCurrentUserUseCase(
+        user_repo=repo,
+        user_cache_repo=user_cache_repo,
+    )
+
+
+ResolveCurrentUserUseCaseDep = Annotated[
+    ResolveCurrentUserUseCase,
+    Depends(get_resolve_current_user_use_case),
+]
+
+
+def get_invalidate_user_cache_use_case(
+    user_cache_repo: UserCacheRepDep,
+) -> InvalidateUserCacheUseCase:
+    return InvalidateUserCacheUseCase(user_cache_repo=user_cache_repo)
+
+
+InvalidateUserCacheUseCaseDep = Annotated[
+    InvalidateUserCacheUseCase,
+    Depends(get_invalidate_user_cache_use_case),
 ]

@@ -9,16 +9,15 @@ log_level = "INFO"
 host = "localhost"
 port = 6379
 db = 0
+user_cache_ttl_minutes = 5
 
 
 [development]
 dynaconf_merge = true
-app_env = "development"
 debug = true
 log_level = "DEBUG"
 
 
 [production]
-app_env = "production"
 debug = false
 log_level = "WARNING"

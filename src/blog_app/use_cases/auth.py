@@ -1,8 +1,10 @@
 from uuid import UUID
 
 from blog_app.domain.entities.tokens import AuthResult
-from blog_app.domain.entities.users import CreateUserCommand, LoginUserCommand
-from blog_app.domain.exceptions.users import UserIdRequired
+from blog_app.domain.entities.users import CreateUserCommand, LoginUserCommand, User
+from blog_app.domain.exceptions.users import UserIdRequired, UserNotFound
+from blog_app.domain.repositories.user_cache import UserCacheRepository
+from blog_app.domain.repositories.users import UserRepository
 from blog_app.use_cases.tokens import IssueTokenPairUseCase
 from blog_app.use_cases.users import CreateUserUseCase, LoginUserUseCase
 
@@ -45,3 +47,33 @@ class LoginAndIssueTokensUseCase:
             get_existing_user_id(user.id)
         )
         return AuthResult(user=user, tokens=tokens)
+
+
+class ResolveCurrentUserUseCase:
+    def __init__(
+        self,
+        user_repo: UserRepository,
+        user_cache_repo: UserCacheRepository,
+    ) -> None:
+        self.user_repo = user_repo
+        self.user_cache_repo = user_cache_repo
+
+    async def execute(self, user_id: UUID) -> User:
+        user = await self.user_cache_repo.get(user_id)
+        if user is not None:
+            return user
+
+        user = await self.user_repo.get(user_id=user_id)
+        if user is None:
+            raise UserNotFound()
+
+        await self.user_cache_repo.save(user)
+        return user
+
+
+class InvalidateUserCacheUseCase:
+    def __init__(self, user_cache_repo: UserCacheRepository) -> None:
+        self.user_cache_repo = user_cache_repo
+
+    async def execute(self, user_id: UUID) -> None:
+        await self.user_cache_repo.delete(user_id)

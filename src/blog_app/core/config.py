@@ -13,7 +13,7 @@ _settings = Dynaconf(
     load_dotenv=True,
     _dotenv_path=DOTENV_PATH,
     environments=True,
-    env_switcher="BLOG_APP_ENV",
+    env_switcher="BLOG_APP_APP_ENV",
     envvar_prefix="BLOG_APP",
     settings_files=[CONFIG_PATH],
 )
@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     jwt_refresh_ttl_minutes: int = int(_settings.jwt.refresh_token_expire_minutes)
     jwt_access_secret: str = _settings.jwt.access_token_secret
     jwt_refresh_secret: str = _settings.jwt.refresh_token_secret
+    user_cache_ttl_minutes: int = int(_settings.redis.user_cache_ttl_minutes)
 
 
 settings = Settings()
