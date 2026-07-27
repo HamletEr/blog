@@ -42,7 +42,14 @@ async def login(
     user_data: UserLogin,
     use_case: LoginAndIssueTokensUseCaseDep,
 ) -> AuthResponse:
-    auth_result = await use_case.execute(LoginUserCommand(**user_data.model_dump()))
+    try:
+        auth_result = await use_case.execute(LoginUserCommand(**user_data.model_dump()))
+    except (PermissionDenied, UserNotFound) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        ) from exc
+
     set_auth_cookies(
         response,
         auth_result.tokens,

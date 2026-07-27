@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from redis.asyncio import Redis
 
+from blog_app.api.exception_handlers import register_exception_handlers
 from blog_app.api.middleware import auth_middleware
 from blog_app.api.v1.router import main_router
 from blog_app.core.config import settings
@@ -31,5 +32,6 @@ def create_app() -> FastAPI:
     )
 
     app.middleware("http")(auth_middleware)
+    register_exception_handlers(app)
     app.include_router(main_router)
     return app
