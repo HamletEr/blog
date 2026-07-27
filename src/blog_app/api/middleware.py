@@ -15,11 +15,16 @@ from blog_app.infrastructure.repositories.users import PGUserRepository
 from blog_app.infrastructure.services.jwt_service import JWTService
 from blog_app.use_cases.auth import ResolveCurrentUserUseCase
 
-PUBLIC_ROUTE_PREFIXES = ("/api/v1/health",)
+PUBLIC_ROUTE_PREFIXES = (
+    "/api/v1/health",
+    "/docs",
+    "/openapi.json",
+)
 PUBLIC_ROUTE_PAIRS = {
     ("POST", "/api/v1/users/"),
     ("POST", "/api/v1/auth/login"),
     ("POST", "/api/v1/auth/refresh"),
+    ("POST", "/api/v1/auth/logout"),
 }
 
 
