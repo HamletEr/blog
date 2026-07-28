@@ -2,7 +2,9 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from blog_app.infrastructure.dependencies.auth import CurrentUserDep
 from blog_app.infrastructure.dependencies.repositories import (
+    CategoryRepDep,
     RefreshTokenRepDep,
     UserCacheRepDep,
     UserRepDep,
@@ -18,6 +20,11 @@ from blog_app.use_cases.auth import (
     ResolveCurrentUserUseCase,
 )
 from blog_app.use_cases.cache import InvalidateUserCacheUseCase
+from blog_app.use_cases.categories import (
+    CreateCategoryUseCase,
+    GetByIdCategoryUseCase,
+    GetListCategoryUseCase,
+)
 from blog_app.use_cases.tokens import (
     GetCurrentUserByAccessTokenUseCase,
     IssueTokenPairUseCase,
@@ -187,4 +194,37 @@ def get_invalidate_user_cache_use_case(
 InvalidateUserCacheUseCaseDep = Annotated[
     InvalidateUserCacheUseCase,
     Depends(get_invalidate_user_cache_use_case),
+]
+
+
+def get_create_category_use_case(
+    repo: CategoryRepDep, user: CurrentUserDep
+) -> CreateCategoryUseCase:
+    return CreateCategoryUseCase(repo=repo, user=user)
+
+
+CreateCategoryUseCaseDep = Annotated[
+    CreateCategoryUseCase, Depends(get_create_category_use_case)
+]
+
+
+def get_list_categories_use_case(
+    repo: CategoryRepDep, user: CurrentUserDep
+) -> GetListCategoryUseCase:
+    return GetListCategoryUseCase(repo=repo, user=user)
+
+
+GetListCategoryUseCaseDep = Annotated[
+    GetListCategoryUseCase, Depends(get_list_categories_use_case)
+]
+
+
+def get_by_id_category_use_case(
+    repo: CategoryRepDep, user: CurrentUserDep
+) -> GetByIdCategoryUseCase:
+    return GetByIdCategoryUseCase(repo=repo, user=user)
+
+
+GetByIdCategoryUseCaseDep = Annotated[
+    GetByIdCategoryUseCase, Depends(get_by_id_category_use_case)
 ]

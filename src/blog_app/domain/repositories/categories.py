@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from blog_app.domain.entities.categories import Category
 
 
-class CategoryArticleRepository(ABC):
+class CategoryRepository(ABC):
     @abstractmethod
     async def get_by_id(self, category_id: int) -> Category: ...
 
