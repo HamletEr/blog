@@ -22,6 +22,7 @@ from blog_app.domain.services.passwords import (
     PasswordComplexityValidator,
     PasswordHasher,
 )
+from blog_app.use_cases.cache import InvalidateUserCacheUseCase
 
 
 def get_authenticated_user(user: User | None) -> User:
@@ -114,16 +115,20 @@ class ChangeUsernameUseCase(BaseUserUseCase):
     def __init__(
         self,
         repo: UserRepository,
+        invalidate_user_cache_use_case: InvalidateUserCacheUseCase,
         current_user: User | None = None,
     ) -> None:
         super().__init__(repo)
+        self.invalidate_user_cache_use_case = invalidate_user_cache_use_case
         self.current_user = current_user
 
     async def execute(self, user_data: ChangeUserUsernameCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
         user = await self.get_user_by_id(user_data.id)
         user.username = user_data.username
-        return await self.repo.update(user)
+        updated_user = await self.repo.update(user)
+        await self.invalidate_user_cache_use_case.execute(user_data.id)
+        return updated_user
 
 
 class ChangeEmailUseCase(BaseUserUseCase):
@@ -131,11 +136,13 @@ class ChangeEmailUseCase(BaseUserUseCase):
         self,
         repo: UserRepository,
         password_hasher: PasswordHasher,
+        invalidate_user_cache_use_case: InvalidateUserCacheUseCase,
         current_user: User | None = None,
     ) -> None:
         super().__init__(repo)
         self.current_user = current_user
         self.password_hasher = password_hasher
+        self.invalidate_user_cache_use_case = invalidate_user_cache_use_case
 
     async def execute(self, user_data: ChangeUserEmailCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
@@ -149,7 +156,9 @@ class ChangeEmailUseCase(BaseUserUseCase):
         if user_with_new_email:
             raise EmailAlreadyExists(user_data.email)
         user.email = user_data.email
-        return await self.repo.update(user)
+        updated_user = await self.repo.update(user)
+        await self.invalidate_user_cache_use_case.execute(user_data.id)
+        return updated_user
 
 
 class ChangePasswordUseCase(BaseUserUseCase):
@@ -158,12 +167,14 @@ class ChangePasswordUseCase(BaseUserUseCase):
         repo: UserRepository,
         password_hasher: PasswordHasher,
         password_complexity_validator: PasswordComplexityValidator,
+        invalidate_user_cache_use_case: InvalidateUserCacheUseCase,
         current_user: User | None = None,
     ) -> None:
         super().__init__(repo)
         self.current_user = current_user
         self.password_hasher = password_hasher
         self.password_complexity_validator = password_complexity_validator
+        self.invalidate_user_cache_use_case = invalidate_user_cache_use_case
 
     async def execute(self, user_data: ChangeUserPasswordCommand) -> User:
         check_user_can_modify_user(self.current_user, user_data.id)
@@ -180,16 +191,20 @@ class ChangePasswordUseCase(BaseUserUseCase):
             user_data.new_password, self.password_complexity_validator
         )
         user.hashed_password = await self.password_hasher.hash(user_data.new_password)
-        return await self.repo.update(user)
+        updated_user = await self.repo.update(user)
+        await self.invalidate_user_cache_use_case.execute(user_data.id)
+        return updated_user
 
 
 class ChangeUserActiveStatusUseCase(BaseUserUseCase):
     def __init__(
         self,
         repo: UserRepository,
+        invalidate_user_cache_use_case: InvalidateUserCacheUseCase,
         current_user: User | None = None,
     ) -> None:
         super().__init__(repo)
+        self.invalidate_user_cache_use_case = invalidate_user_cache_use_case
         self.current_user = current_user
 
     async def execute(self, user_id: UUID) -> User:
@@ -197,4 +212,6 @@ class ChangeUserActiveStatusUseCase(BaseUserUseCase):
             raise PermissionDenied()
         user = await self.get_user_by_id(user_id)
         user.is_active = not user.is_active
-        return await self.repo.update(user)
+        updated_user = await self.repo.update(user)
+        await self.invalidate_user_cache_use_case.execute(user_id)
+        return updated_user

@@ -21,6 +21,7 @@ from blog_app.domain.exceptions.users import (
 )
 from blog_app.domain.repositories.users import UserRepository
 from blog_app.domain.services.passwords import PasswordHasher
+from blog_app.use_cases.cache import InvalidateUserCacheUseCase
 from blog_app.use_cases.users import (
     ChangeEmailUseCase,
     ChangePasswordUseCase,
@@ -63,6 +64,11 @@ def repo() -> AsyncMock:
 @pytest.fixture
 def password_service() -> AsyncMock:
     return AsyncMock(spec=PasswordHasher)
+
+
+@pytest.fixture
+def invalidate_user_cache_use_case() -> AsyncMock:
+    return AsyncMock(spec=InvalidateUserCacheUseCase)
 
 
 def test_get_authenticated_user():
@@ -177,43 +183,71 @@ async def test_login_user_raises_if_password_is_incorrect(
     )
 
 
-async def test_change_username(repo: AsyncMock):
+async def test_change_username(
+    repo: AsyncMock,
+    invalidate_user_cache_use_case: AsyncMock,
+):
     user = make_user()
     user_data = ChangeUserUsernameCommand(id=user.id, username="new_username")
     repo.get.return_value = user
     repo.update.side_effect = lambda updated_user: updated_user
 
-    result = await ChangeUsernameUseCase(repo, user).execute(user_data)
+    result = await ChangeUsernameUseCase(
+        repo,
+        invalidate_user_cache_use_case,
+        user,
+    ).execute(user_data)
 
     assert result == user
     assert result.username == user_data.username
     repo.get.assert_awaited_once_with(user_id=user_data.id)
     repo.update.assert_awaited_once_with(user)
+    invalidate_user_cache_use_case.execute.assert_awaited_once_with(user_data.id)
 
 
-async def test_change_username_raises_if_user_cannot_modify(repo: AsyncMock):
+async def test_change_username_raises_if_user_cannot_modify(
+    repo: AsyncMock,
+    invalidate_user_cache_use_case: AsyncMock,
+):
     current_user = make_user(is_admin=False)
     user_data = ChangeUserUsernameCommand(id=uuid4(), username="new_username")
 
     with pytest.raises(PermissionDenied):
-        await ChangeUsernameUseCase(repo, current_user).execute(user_data)
+        await ChangeUsernameUseCase(
+            repo,
+            invalidate_user_cache_use_case,
+            current_user,
+        ).execute(user_data)
 
     repo.get.assert_not_awaited()
     repo.update.assert_not_awaited()
+    invalidate_user_cache_use_case.execute.assert_not_awaited()
 
 
-async def test_change_username_raises_if_user_not_found(repo: AsyncMock):
+async def test_change_username_raises_if_user_not_found(
+    repo: AsyncMock,
+    invalidate_user_cache_use_case: AsyncMock,
+):
     admin_user = make_user(is_admin=True)
     user_data = ChangeUserUsernameCommand(id=uuid4(), username="new_username")
     repo.get.return_value = None
 
     with pytest.raises(UserNotFound):
-        await ChangeUsernameUseCase(repo, admin_user).execute(user_data)
+        await ChangeUsernameUseCase(
+            repo,
+            invalidate_user_cache_use_case,
+            admin_user,
+        ).execute(user_data)
 
     repo.update.assert_not_awaited()
+    invalidate_user_cache_use_case.execute.assert_not_awaited()
 
 
-async def test_change_email(repo: AsyncMock, password_service: AsyncMock):
+async def test_change_email(
+    repo: AsyncMock,
+    password_service: AsyncMock,
+    invalidate_user_cache_use_case: AsyncMock,
+):
     user = make_user(hashed_password=OLD_HASHED_PASSWORD)
     user_data = ChangeUserEmailCommand(
         id=user.id,
@@ -232,7 +266,12 @@ async def test_change_email(repo: AsyncMock, password_service: AsyncMock):
     repo.get.side_effect = get_user_by_id_or_email
     repo.update.side_effect = lambda updated_user: updated_user
 
-    result = await ChangeEmailUseCase(repo, user).execute(user_data, password_service)
+    result = await ChangeEmailUseCase(
+        repo,
+        password_service,
+        invalidate_user_cache_use_case,
+        user,
+    ).execute(user_data)
 
     assert result == user
     assert result.email == user_data.email
@@ -240,10 +279,13 @@ async def test_change_email(repo: AsyncMock, password_service: AsyncMock):
         user_data.password, OLD_HASHED_PASSWORD
     )
     repo.update.assert_awaited_once_with(user)
+    invalidate_user_cache_use_case.execute.assert_awaited_once_with(user_data.id)
 
 
 async def test_change_email_raises_if_password_is_incorrect(
-    repo: AsyncMock, password_service: AsyncMock
+    repo: AsyncMock,
+    password_service: AsyncMock,
+    invalidate_user_cache_use_case: AsyncMock,
 ):
     user = make_user(hashed_password=OLD_HASHED_PASSWORD)
     user_data = ChangeUserEmailCommand(
@@ -255,13 +297,21 @@ async def test_change_email_raises_if_password_is_incorrect(
     password_service.verify.return_value = False
 
     with pytest.raises(IncorrectPassword):
-        await ChangeEmailUseCase(repo, user).execute(user_data, password_service)
+        await ChangeEmailUseCase(
+            repo,
+            password_service,
+            invalidate_user_cache_use_case,
+            user,
+        ).execute(user_data)
 
     repo.update.assert_not_awaited()
+    invalidate_user_cache_use_case.execute.assert_not_awaited()
 
 
 async def test_change_email_raises_if_email_already_exists(
-    repo: AsyncMock, password_service: AsyncMock
+    repo: AsyncMock,
+    password_service: AsyncMock,
+    invalidate_user_cache_use_case: AsyncMock,
 ):
     user = make_user(hashed_password=OLD_HASHED_PASSWORD)
     existing_user = make_user(email="new@mail.ru")
@@ -282,6 +332,12 @@ async def test_change_email_raises_if_email_already_exists(
     repo.get.side_effect = get_user_by_id_or_email
 
     with pytest.raises(EmailAlreadyExists):
-        await ChangeEmailUseCase(repo, user).execute(user_data, password_service)
+        await ChangeEmailUseCase(
+            repo,
+            password_service,
+            invalidate_user_cache_use_case,
+            user,
+        ).execute(user_data)
 
     repo.update.assert_not_awaited()
+    invalidate_user_cache_use_case.execute.assert_not_awaited()

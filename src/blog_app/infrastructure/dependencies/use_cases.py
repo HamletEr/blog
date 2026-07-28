@@ -13,11 +13,11 @@ from blog_app.infrastructure.dependencies.services.passwords import (
     PasswordHasherDep,
 )
 from blog_app.use_cases.auth import (
-    InvalidateUserCacheUseCase,
     LoginAndIssueTokensUseCase,
     RegisterAndIssueTokensUseCase,
     ResolveCurrentUserUseCase,
 )
+from blog_app.use_cases.cache import InvalidateUserCacheUseCase
 from blog_app.use_cases.tokens import (
     GetCurrentUserByAccessTokenUseCase,
     IssueTokenPairUseCase,
