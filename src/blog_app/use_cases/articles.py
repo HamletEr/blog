@@ -46,7 +46,7 @@ def validate_page_and_limit_on_page(
 class BaseArticleUseCase:
     def __init__(self, repo: ArticleRepository, user: User | None) -> None:
         self.repo = repo
-        self.user = get_authenticated_user(user)
+        self.user = user
 
 
 class GetArticleById(BaseArticleUseCase):
@@ -72,14 +72,14 @@ class GetListArticles(BaseArticleUseCase):
 
 class CreateArticle(BaseArticleUseCase):
     async def execute(self, article_data: ArticleData) -> Article:
-        require_admin(self.user)
+        require_admin(get_authenticated_user(self.user))
         validate_article_data(article_data)
         return await self.repo.create(article_data)
 
 
 class UpdateArticle(BaseArticleUseCase):
     async def execute(self, article_id: UUID, article_data: ArticleData) -> Article:
-        require_admin(self.user)
+        require_admin(get_authenticated_user(self.user))
         validate_article_data(article_data)
         updated_article = await self.repo.update(article_id, article_data)
         return updated_article
@@ -87,5 +87,5 @@ class UpdateArticle(BaseArticleUseCase):
 
 class DeleteArticle(BaseArticleUseCase):
     async def execute(self, article_id: UUID) -> None:
-        require_admin(self.user)
+        require_admin(get_authenticated_user(self.user))
         await self.repo.delete(article_id)

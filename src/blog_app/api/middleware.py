@@ -20,6 +20,10 @@ PUBLIC_ROUTE_PREFIXES = (
     "/docs",
     "/openapi.json",
 )
+PUBLIC_GET_ROUTE_PREFIXES = (
+    "/api/v1/articles",
+    "/api/v1/categories",
+)
 PUBLIC_ROUTE_PAIRS = {
     ("POST", "/api/v1/users/"),
     ("POST", "/api/v1/auth/login"),
@@ -32,6 +36,10 @@ def is_public_route(request: Request) -> bool:
     if request.method == "OPTIONS":
         return True
     path = request.url.path
+    if request.method == "GET" and any(
+        path.startswith(prefix) for prefix in PUBLIC_GET_ROUTE_PREFIXES
+    ):
+        return True
     if any(path.startswith(prefix) for prefix in PUBLIC_ROUTE_PREFIXES):
         return True
     return (request.method, path) in PUBLIC_ROUTE_PAIRS

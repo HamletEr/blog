@@ -5,14 +5,14 @@ from blog_app.use_cases.users import get_authenticated_user, require_admin
 
 
 class BaseCategoryArticleUseCase:
-    def __init__(self, repo: CategoryArticleRepository, user: User):
+    def __init__(self, repo: CategoryArticleRepository, user: User | None):
         self.repo = repo
-        self.user = get_authenticated_user(user)
+        self.user = user
 
 
 class CreateCategoryArticleUseCase(BaseCategoryArticleUseCase):
     async def execute(self, category_name: str) -> Category:
-        require_admin(self.user)
+        require_admin(get_authenticated_user(self.user))
         return await self.repo.create(category_name)
 
 
