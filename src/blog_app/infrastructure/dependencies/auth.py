@@ -16,4 +16,9 @@ def get_request_user(request: Request) -> User:
     return user
 
 
+def get_optional_request_user(request: Request) -> User | None:
+    return cast(User | None, getattr(request.state, "user", None))
+
+
 CurrentUserDep = Annotated[User, Depends(get_request_user)]
+OptionalCurrentUserDep = Annotated[User | None, Depends(get_optional_request_user)]

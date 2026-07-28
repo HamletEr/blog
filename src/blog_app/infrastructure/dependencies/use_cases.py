@@ -2,7 +2,10 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from blog_app.infrastructure.dependencies.auth import CurrentUserDep
+from blog_app.infrastructure.dependencies.auth import (
+    CurrentUserDep,
+    OptionalCurrentUserDep,
+)
 from blog_app.infrastructure.dependencies.repositories import (
     CategoryRepDep,
     RefreshTokenRepDep,
@@ -209,7 +212,7 @@ CreateCategoryUseCaseDep = Annotated[
 
 
 def get_list_categories_use_case(
-    repo: CategoryRepDep, user: CurrentUserDep
+    repo: CategoryRepDep, user: OptionalCurrentUserDep
 ) -> GetListCategoryUseCase:
     return GetListCategoryUseCase(repo=repo, user=user)
 
@@ -220,7 +223,7 @@ GetListCategoryUseCaseDep = Annotated[
 
 
 def get_by_id_category_use_case(
-    repo: CategoryRepDep, user: CurrentUserDep
+    repo: CategoryRepDep, user: OptionalCurrentUserDep
 ) -> GetByIdCategoryUseCase:
     return GetByIdCategoryUseCase(repo=repo, user=user)
 
