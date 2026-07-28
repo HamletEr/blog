@@ -7,6 +7,7 @@ from blog_app.infrastructure.dependencies.auth import (
     OptionalCurrentUserDep,
 )
 from blog_app.infrastructure.dependencies.repositories import (
+    ArticleRepoDep,
     CategoryRepDep,
     RefreshTokenRepDep,
     UserCacheRepDep,
@@ -16,6 +17,13 @@ from blog_app.infrastructure.dependencies.services.jwt_service import JWTService
 from blog_app.infrastructure.dependencies.services.passwords import (
     PasswordComplexityValidatorDep,
     PasswordHasherDep,
+)
+from blog_app.use_cases.articles import (
+    CreateArticle,
+    DeleteArticle,
+    GetArticleById,
+    GetListArticles,
+    UpdateArticle,
 )
 from blog_app.use_cases.auth import (
     LoginAndIssueTokensUseCase,
@@ -228,6 +236,56 @@ def get_by_id_category_use_case(
     return GetByIdCategoryUseCase(repo=repo, user=user)
 
 
-GetByIdCategoryUseCaseDep = Annotated[
+GetCategoryByIdUseCaseDep = Annotated[
     GetByIdCategoryUseCase, Depends(get_by_id_category_use_case)
 ]
+
+
+def get_article_by_id_use_case(
+    repo: ArticleRepoDep,
+    user: OptionalCurrentUserDep,
+) -> GetArticleById:
+    return GetArticleById(repo=repo, user=user)
+
+
+GetArticleByIdUseCaseDep = Annotated[
+    GetArticleById, Depends(get_article_by_id_use_case)
+]
+
+
+def get_list_articles_use_case(
+    repo: ArticleRepoDep, user: OptionalCurrentUserDep
+) -> GetListArticles:
+    return GetListArticles(repo=repo, user=user)
+
+
+GetListArticlesUseCaseDep = Annotated[
+    GetListArticles, Depends(get_list_articles_use_case)
+]
+
+
+def get_create_article_use_case(
+    repo: ArticleRepoDep, user: CurrentUserDep
+) -> CreateArticle:
+    return CreateArticle(repo=repo, user=user)
+
+
+CreateArticleUseCaseDep = Annotated[CreateArticle, Depends(get_create_article_use_case)]
+
+
+def get_update_article_use_case(
+    repo: ArticleRepoDep, user: CurrentUserDep
+) -> UpdateArticle:
+    return UpdateArticle(repo=repo, user=user)
+
+
+UpdateArticleUseCaseDep = Annotated[UpdateArticle, Depends(get_update_article_use_case)]
+
+
+def get_delete_article_use_case(
+    repo: ArticleRepoDep, user: CurrentUserDep
+) -> DeleteArticle:
+    return DeleteArticle(repo=repo, user=user)
+
+
+DeleteArticleUseCaseDep = Annotated[DeleteArticle, Depends(get_delete_article_use_case)]

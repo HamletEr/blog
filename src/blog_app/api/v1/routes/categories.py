@@ -4,7 +4,7 @@ from starlette import status
 from blog_app.api.v1.schemas.categories import CategoryInfo, CategoryName
 from blog_app.infrastructure.dependencies.use_cases import (
     CreateCategoryUseCaseDep,
-    GetByIdCategoryUseCaseDep,
+    GetCategoryByIdUseCaseDep,
     GetListCategoryUseCaseDep,
 )
 
@@ -30,7 +30,7 @@ async def categories_create(
 
 @router.get("/{id}", status_code=status.HTTP_200_OK)
 async def get_category_by_id(
-    category_id: int, use_case: GetByIdCategoryUseCaseDep
+    category_id: int, use_case: GetCategoryByIdUseCaseDep
 ) -> CategoryInfo:
     category_domain = await use_case.execute(category_id)
     return CategoryInfo.model_validate(category_domain)
