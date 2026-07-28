@@ -6,26 +6,14 @@ from blog_app.domain.exceptions.articles import (
     ArticleNotFoundError,
     IncorrectLimitOnPage,
     IncorrectPageNumber,
-    PermissionDenied,
     TooShortText,
 )
-from blog_app.domain.exceptions.users import AuthenticationRequired
 from blog_app.domain.repositories.articles import ArticleRepository
+from blog_app.use_cases.users import get_authenticated_user, require_admin
 
 MIN_TITLE_LENGTH = 3
 MIN_CONTENT_LENGTH = 10
 MIN_LOOKING_TEXT_LENGTH = 3
-
-
-def require_authenticated(user: User | None) -> User:
-    if user is None:
-        raise AuthenticationRequired
-    return user
-
-
-def require_admin(user: User) -> None:
-    if not user.is_admin:
-        raise PermissionDenied
 
 
 def validate_article_data(article_data: ArticleData) -> None:
@@ -58,7 +46,7 @@ def validate_page_and_limit_on_page(
 class BaseArticleUseCase:
     def __init__(self, repo: ArticleRepository, user: User | None) -> None:
         self.repo = repo
-        self.user = require_authenticated(user)
+        self.user = get_authenticated_user(user)
 
 
 class GetArticleById(BaseArticleUseCase):

@@ -9,6 +9,10 @@ from blog_app.domain.exceptions.articles import (
     PermissionDenied as ArticlePermissionDenied,
     TooShortText,
 )
+from blog_app.domain.exceptions.categories import (
+    CategoryAlreadyExists,
+    CategoryNotFound,
+)
 from blog_app.domain.exceptions.tokens import ExpiredToken, InvalidToken
 from blog_app.domain.exceptions.users import (
     AuthenticationRequired,
@@ -135,3 +139,15 @@ def register_exception_handlers(app: FastAPI) -> None:
             status.HTTP_400_BAD_REQUEST,
             "User id or user email is required",
         )
+
+    @app.exception_handler(CategoryAlreadyExists)
+    async def handle_category_already_exists(
+        request: Request, exc: CategoryAlreadyExists
+    ) -> JSONResponse:
+        return _json_error(status.HTTP_409_CONFLICT, "Category already exists")
+
+    @app.exception_handler(CategoryNotFound)
+    async def handle_category_not_found(
+        request: Request, exc: CategoryNotFound
+    ) -> JSONResponse:
+        return _json_error(status.HTTP_404_NOT_FOUND, "Category not found")

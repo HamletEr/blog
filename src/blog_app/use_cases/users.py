@@ -31,6 +31,11 @@ def get_authenticated_user(user: User | None) -> User:
     raise AuthenticationRequired()
 
 
+def require_admin(user: User) -> None:
+    if not user.is_admin:
+        raise PermissionDenied
+
+
 def check_user_can_modify_user(
     current_user: User | None, modified_user_id: UUID | None
 ) -> None:
