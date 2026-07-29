@@ -220,3 +220,24 @@ class ChangeUserActiveStatusUseCase(BaseUserUseCase):
         updated_user = await self.repo.update(user)
         await self.invalidate_user_cache_use_case.execute(user_id)
         return updated_user
+
+
+class ChangeUserAdminStatusUseCase(BaseUserUseCase):
+    def __init__(
+        self,
+        repo: UserRepository,
+        invalidate_user_cache_use_case: InvalidateUserCacheUseCase,
+        current_user: User | None = None,
+    ) -> None:
+        super().__init__(repo)
+        self.invalidate_user_cache_use_case = invalidate_user_cache_use_case
+        self.current_user = current_user
+
+    async def execute(self, user_id: UUID) -> User:
+        if not self.current_user or not self.current_user.is_admin:
+            raise PermissionDenied()
+        user = await self.get_user_by_id(user_id)
+        user.is_admin = not user.is_admin
+        updated_user = await self.repo.update(user)
+        await self.invalidate_user_cache_use_case.execute(user_id)
+        return updated_user

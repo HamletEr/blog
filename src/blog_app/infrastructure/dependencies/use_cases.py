@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from fastapi import Depends
@@ -44,6 +46,11 @@ from blog_app.use_cases.tokens import (
 )
 from blog_app.use_cases.users import (
     BaseUserUseCase,
+    ChangeEmailUseCase,
+    ChangePasswordUseCase,
+    ChangeUserActiveStatusUseCase,
+    ChangeUserAdminStatusUseCase,
+    ChangeUsernameUseCase,
     CreateUserUseCase,
     LoginUserUseCase,
 )
@@ -79,6 +86,102 @@ def get_login_user_use_case(
 LoginUserUseCaseDep = Annotated[
     LoginUserUseCase,
     Depends(get_login_user_use_case),
+]
+
+
+def get_change_username_use_case(
+    repo: UserRepDep,
+    invalidate_user_cache_use_case: InvalidateUserCacheUseCaseDep,
+    user: CurrentUserDep,
+) -> ChangeUsernameUseCase:
+    return ChangeUsernameUseCase(
+        repo=repo,
+        invalidate_user_cache_use_case=invalidate_user_cache_use_case,
+        current_user=user,
+    )
+
+
+ChangeUsernameUseCaseDep = Annotated[
+    ChangeUsernameUseCase,
+    Depends(get_change_username_use_case),
+]
+
+
+def get_change_email_use_case(
+    repo: UserRepDep,
+    password_hasher: PasswordHasherDep,
+    invalidate_user_cache_use_case: InvalidateUserCacheUseCaseDep,
+    user: CurrentUserDep,
+) -> ChangeEmailUseCase:
+    return ChangeEmailUseCase(
+        repo=repo,
+        password_hasher=password_hasher,
+        invalidate_user_cache_use_case=invalidate_user_cache_use_case,
+        current_user=user,
+    )
+
+
+ChangeEmailUseCaseDep = Annotated[
+    ChangeEmailUseCase,
+    Depends(get_change_email_use_case),
+]
+
+
+def get_change_password_use_case(
+    repo: UserRepDep,
+    password_hasher: PasswordHasherDep,
+    passwords_complexity_validator: PasswordComplexityValidatorDep,
+    invalidate_user_cache_use_case: InvalidateUserCacheUseCaseDep,
+    user: CurrentUserDep,
+) -> ChangePasswordUseCase:
+    return ChangePasswordUseCase(
+        repo=repo,
+        password_hasher=password_hasher,
+        password_complexity_validator=passwords_complexity_validator,
+        invalidate_user_cache_use_case=invalidate_user_cache_use_case,
+        current_user=user,
+    )
+
+
+ChangePasswordUseCaseDep = Annotated[
+    ChangePasswordUseCase,
+    Depends(get_change_password_use_case),
+]
+
+
+def get_change_user_active_status_use_case(
+    repo: UserRepDep,
+    invalidate_user_cache_use_case: InvalidateUserCacheUseCaseDep,
+    user: CurrentUserDep,
+) -> ChangeUserActiveStatusUseCase:
+    return ChangeUserActiveStatusUseCase(
+        repo=repo,
+        invalidate_user_cache_use_case=invalidate_user_cache_use_case,
+        current_user=user,
+    )
+
+
+ChangeUserActiveStatusUseCaseDep = Annotated[
+    ChangeUserActiveStatusUseCase,
+    Depends(get_change_user_active_status_use_case),
+]
+
+
+def get_change_user_admin_status_use_case(
+    repo: UserRepDep,
+    invalidate_user_cache_use_case: InvalidateUserCacheUseCaseDep,
+    user: CurrentUserDep,
+) -> ChangeUserAdminStatusUseCase:
+    return ChangeUserAdminStatusUseCase(
+        repo=repo,
+        invalidate_user_cache_use_case=invalidate_user_cache_use_case,
+        current_user=user,
+    )
+
+
+ChangeUserAdminStatusUseCaseDep = Annotated[
+    ChangeUserAdminStatusUseCase,
+    Depends(get_change_user_admin_status_use_case),
 ]
 
 
