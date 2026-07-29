@@ -39,6 +39,14 @@ def get_redis_dsn() -> str:
     return f"redis://{_settings.redis.host}:{_settings.redis.port}/{_settings.redis.db}"
 
 
+def get_celery_broker_url() -> str:
+    return (
+        "amqp://"
+        f"{_settings.rabbitmq.user}:{_settings.rabbitmq.password}"
+        f"@{_settings.rabbitmq.host}:{_settings.rabbitmq.port}//"
+    )
+
+
 class Settings(BaseSettings):
     app_name: str = _settings.app_name
     app_version: str = _settings.version
@@ -48,6 +56,7 @@ class Settings(BaseSettings):
     db_dsn_async: str = get_db_dsn(async_=True)
     db_dsn_sync: str = get_db_dsn(async_=False)
     redis_dsn: str = get_redis_dsn()
+    celery_broker_url: str = get_celery_broker_url()
     debug: bool = _settings.debug
     jwt_algorithm: str = _settings.jwt.algorithm
     jwt_access_ttl_minutes: int = int(_settings.jwt.access_token_expire_minutes)
@@ -55,6 +64,14 @@ class Settings(BaseSettings):
     jwt_access_secret: str = _settings.jwt.access_token_secret
     jwt_refresh_secret: str = _settings.jwt.refresh_token_secret
     user_cache_ttl_minutes: int = int(_settings.redis.user_cache_ttl_minutes)
+    rabbitmq_queue: str = _settings.rabbitmq.queue
+    smtp_host: str = _settings.smtp.host
+    smtp_port: int = int(_settings.smtp.port)
+    smtp_user: str = _settings.smtp.user
+    smtp_password: str = _settings.smtp.password
+    smtp_from_email: str = _settings.smtp.from_email
+    smtp_from_name: str = _settings.smtp.from_name
+    smtp_use_tls: bool = _settings.smtp.use_tls
 
 
 settings = Settings()

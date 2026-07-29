@@ -3,23 +3,46 @@ services:
     build:
       context: .
     ports:
-      - "8000:8000"
+      - "${BLOG_APP_PORT}:8000"
     env_file:
       - .env
     environment:
       BLOG_APP_DATABASE__HOST: blog_app_db
       BLOG_APP_REDIS__HOST: blog_app_redis
+      BLOG_APP_RABBITMQ__HOST: blog_app_rabbitmq
+      BLOG_APP_SMTP__HOST: blog_app_mailpit
     depends_on:
       blog_app_db:
         condition: service_healthy
       blog_app_redis:
         condition: service_healthy
+      blog_app_rabbitmq:
+        condition: service_healthy
+      blog_app_mailpit:
+        condition: service_started
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS --max-time 2 http://localhost:8000/api/v1/health/live" ]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  blog_app_worker:
+    build:
+      context: .
+    command: ["celery", "-A", "blog_app.tasks.celery_app:celery_app", "worker", "--loglevel=info"]
+    env_file:
+      - .env
+    environment:
+      BLOG_APP_DATABASE__HOST: blog_app_db
+      BLOG_APP_REDIS__HOST: blog_app_redis
+      BLOG_APP_RABBITMQ__HOST: blog_app_rabbitmq
+      BLOG_APP_SMTP__HOST: blog_app_mailpit
+    depends_on:
+      blog_app_rabbitmq:
+        condition: service_healthy
+      blog_app_mailpit:
+        condition: service_started
 
   blog_app_db:
     image: postgres:18-bookworm
@@ -50,6 +73,27 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  blog_app_rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "${BLOG_APP_RABBITMQ__PORT}:5672"
+      - "${BLOG_APP_RABBITMQ__MANAGEMENT_PORT}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${BLOG_APP_RABBITMQ__USER}
+      RABBITMQ_DEFAULT_PASS: ${BLOG_APP_RABBITMQ__PASSWORD}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  blog_app_mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "${BLOG_APP_MAILPIT__SMTP_PORT}:1025"
+      - "${BLOG_APP_MAILPIT__WEB_PORT}:8025"
 
 volumes:
   postgres_data:

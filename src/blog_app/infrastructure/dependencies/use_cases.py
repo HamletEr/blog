@@ -16,6 +16,9 @@ from blog_app.infrastructure.dependencies.repositories import (
     UserRepDep,
 )
 from blog_app.infrastructure.dependencies.services.jwt_service import JWTServiceDep
+from blog_app.infrastructure.dependencies.services.notifications import (
+    UserRegistrationNotifierDep,
+)
 from blog_app.infrastructure.dependencies.services.passwords import (
     PasswordComplexityValidatorDep,
     PasswordHasherDep,
@@ -256,10 +259,12 @@ GetCurrentUserByAccessTokenUseCaseDep = Annotated[
 def get_register_and_issue_tokens_use_case(
     create_user_use_case: CreateUserUseCaseDep,
     issue_token_pair_use_case: IssueTokenPairUseCaseDep,
+    user_registration_notifier: UserRegistrationNotifierDep,
 ) -> RegisterAndIssueTokensUseCase:
     return RegisterAndIssueTokensUseCase(
         create_user_use_case=create_user_use_case,
         issue_token_pair_use_case=issue_token_pair_use_case,
+        user_registration_notifier=user_registration_notifier,
     )
 
 

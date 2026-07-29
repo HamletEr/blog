@@ -1,10 +1,11 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
 
 from blog_app.domain.entities.tokens import AuthResult, TokenPair
 from blog_app.domain.entities.users import CreateUserCommand, LoginUserCommand
+from blog_app.domain.exceptions.notifications import NotificationDeliveryError
 from blog_app.domain.exceptions.users import (
     PermissionDenied,
     UserIdRequired,
@@ -31,10 +32,12 @@ async def test_register_and_issue_tokens_returns_auth_result(user_factory) -> No
     create_user_use_case.execute.return_value = user
     issue_token_pair_use_case = AsyncMock()
     issue_token_pair_use_case.execute.return_value = tokens
+    user_registration_notifier = Mock()
 
     use_case = RegisterAndIssueTokensUseCase(
         create_user_use_case=create_user_use_case,
         issue_token_pair_use_case=issue_token_pair_use_case,
+        user_registration_notifier=user_registration_notifier,
     )
 
     command = CreateUserCommand(
@@ -46,6 +49,41 @@ async def test_register_and_issue_tokens_returns_auth_result(user_factory) -> No
 
     assert result == AuthResult(user=user, tokens=tokens)
     create_user_use_case.execute.assert_awaited_once_with(command)
+    user_registration_notifier.send_successful_registration_email.assert_called_once_with(
+        user
+    )
+    issue_token_pair_use_case.execute.assert_awaited_once_with(user.id)
+
+
+@pytest.mark.asyncio
+async def test_register_and_issue_tokens_continues_when_notification_fails(
+    user_factory,
+) -> None:
+    user = user_factory()
+    tokens = TokenPair(access_token="access", refresh_token="refresh")
+    create_user_use_case = AsyncMock()
+    create_user_use_case.execute.return_value = user
+    issue_token_pair_use_case = AsyncMock()
+    issue_token_pair_use_case.execute.return_value = tokens
+    user_registration_notifier = Mock()
+    user_registration_notifier.send_successful_registration_email.side_effect = (
+        NotificationDeliveryError()
+    )
+
+    use_case = RegisterAndIssueTokensUseCase(
+        create_user_use_case=create_user_use_case,
+        issue_token_pair_use_case=issue_token_pair_use_case,
+        user_registration_notifier=user_registration_notifier,
+    )
+
+    command = CreateUserCommand(
+        username="alice",
+        email="alice@example.com",
+        password="StrongPass123",
+    )
+    result = await use_case.execute(command)
+
+    assert result == AuthResult(user=user, tokens=tokens)
     issue_token_pair_use_case.execute.assert_awaited_once_with(user.id)
 
 

@@ -11,6 +11,22 @@ port = 6379
 db = 0
 user_cache_ttl_minutes = 5
 
+[default.rabbitmq]
+host = "localhost"
+port = 5672
+user = "guest"
+password = "guest"
+queue = "emails"
+
+[default.smtp]
+host = "localhost"
+port = 1025
+user = ""
+password = ""
+from_email = "no-reply@blog.local"
+from_name = "Blog App"
+use_tls = false
+
 
 [development]
 dynaconf_merge = true
