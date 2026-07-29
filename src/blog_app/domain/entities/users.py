@@ -26,7 +26,7 @@ class ChangeUserUsernameCommand:
 class ChangeUserEmailCommand:
     id: UUID
     email: str
-    password: str
+    password: str | None
 
 
 @dataclass(frozen=True)

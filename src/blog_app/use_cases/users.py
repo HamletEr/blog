@@ -153,8 +153,11 @@ class ChangeEmailUseCase(BaseUserUseCase):
         check_user_can_modify_user(self.current_user, user_data.id)
         current_user = get_authenticated_user(self.current_user)
         user = await self.get_user_by_id(user_data.id)
-        if not current_user.is_admin and not await self.password_hasher.verify(
-            user_data.password, user.hashed_password
+        if not current_user.is_admin and (
+            not user_data.password
+            or not await self.password_hasher.verify(
+                user_data.password, user.hashed_password
+            )
         ):
             raise IncorrectPassword()
         user_with_new_email = await self.get_user_by_email(email=user_data.email)

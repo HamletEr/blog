@@ -40,21 +40,18 @@ class UserLogin(BaseModel):
     password: Password
 
 
-class UserChangePassword(BaseModel):
-    id: UUID4
-    old_password: Password | None
-    new_password: Password
-
-
-class UserChangeUsername(BaseModel):
-    id: UUID4
+class UserUpdateUsername(BaseModel):
     username: Username
 
 
-class UserChangeEmail(BaseModel):
-    id: UUID4
+class UserUpdateEmail(BaseModel):
     email: NormalizedEmail
-    password: Password
+    password: Password | None = None
+
+
+class UserUpdatePassword(BaseModel):
+    old_password: Password | None = None
+    new_password: Password
 
 
 class UserInfo(BaseModel):
