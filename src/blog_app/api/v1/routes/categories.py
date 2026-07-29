@@ -30,7 +30,7 @@ async def categories_create(
 
 @router.get("/{id}", status_code=status.HTTP_200_OK)
 async def get_category_by_id(
-    category_id: int, use_case: GetCategoryByIdUseCaseDep
+    id: int, use_case: GetCategoryByIdUseCaseDep
 ) -> CategoryInfo:
-    category_domain = await use_case.execute(category_id)
+    category_domain = await use_case.execute(id)
     return CategoryInfo.model_validate(category_domain)
