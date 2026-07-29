@@ -17,6 +17,7 @@ from blog_app.domain.exceptions.users import (
     UserAlreadyExists,
     UserNotFound,
 )
+from blog_app.domain.repositories.tokens import RefreshTokenRepository
 from blog_app.domain.repositories.users import UserRepository
 from blog_app.domain.services.passwords import (
     PasswordComplexityValidator,
@@ -173,12 +174,14 @@ class ChangePasswordUseCase(BaseUserUseCase):
     def __init__(
         self,
         repo: UserRepository,
+        refresh_token_repo: RefreshTokenRepository,
         password_hasher: PasswordHasher,
         password_complexity_validator: PasswordComplexityValidator,
         invalidate_user_cache_use_case: InvalidateUserCacheUseCase,
         current_user: User | None = None,
     ) -> None:
         super().__init__(repo)
+        self.refresh_token_repo = refresh_token_repo
         self.current_user = current_user
         self.password_hasher = password_hasher
         self.password_complexity_validator = password_complexity_validator
@@ -200,6 +203,7 @@ class ChangePasswordUseCase(BaseUserUseCase):
         )
         user.hashed_password = await self.password_hasher.hash(user_data.new_password)
         updated_user = await self.repo.update(user)
+        await self.refresh_token_repo.revoke_all_for_user(user_data.id)
         await self.invalidate_user_cache_use_case.execute(user_data.id)
         return updated_user
 

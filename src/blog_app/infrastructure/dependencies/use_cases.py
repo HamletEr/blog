@@ -129,6 +129,7 @@ ChangeEmailUseCaseDep = Annotated[
 
 def get_change_password_use_case(
     repo: UserRepDep,
+    refresh_token_repo: RefreshTokenRepDep,
     password_hasher: PasswordHasherDep,
     passwords_complexity_validator: PasswordComplexityValidatorDep,
     invalidate_user_cache_use_case: InvalidateUserCacheUseCaseDep,
@@ -136,6 +137,7 @@ def get_change_password_use_case(
 ) -> ChangePasswordUseCase:
     return ChangePasswordUseCase(
         repo=repo,
+        refresh_token_repo=refresh_token_repo,
         password_hasher=password_hasher,
         password_complexity_validator=passwords_complexity_validator,
         invalidate_user_cache_use_case=invalidate_user_cache_use_case,
