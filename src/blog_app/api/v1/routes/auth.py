@@ -1,6 +1,7 @@
 from contextlib import suppress
 
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from starlette import status
 
 from blog_app.api.auth_cookies import (
@@ -65,7 +66,7 @@ async def refresh_session(
     request: Request,
     response: Response,
     use_case: RefreshTokenPairUseCaseDep,
-) -> MessageResponse:
+) -> MessageResponse | Response:
     refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE_KEY)
     if not refresh_token:
         raise HTTPException(
@@ -75,12 +76,13 @@ async def refresh_session(
 
     try:
         token_pair = await use_case.execute(refresh_token)
-    except (ExpiredToken, InvalidToken, PermissionDenied, UserNotFound) as exc:
-        clear_auth_cookies(response, secure=use_secure_cookies())
-        raise HTTPException(
+    except (ExpiredToken, InvalidToken, PermissionDenied, UserNotFound):
+        error_response = JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-        ) from exc
+            content={"detail": "Invalid refresh token"},
+        )
+        clear_auth_cookies(error_response, secure=use_secure_cookies())
+        return error_response
 
     set_auth_cookies(
         response,

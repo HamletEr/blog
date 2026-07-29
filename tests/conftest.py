@@ -1,10 +1,17 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
+from urllib.parse import urlparse
 from uuid import uuid4
 
+from fastapi.testclient import TestClient
 import pytest
+import pytest_asyncio
+from redis.asyncio import Redis
+from redis.exceptions import ConnectionError as RedisConnectionError
 
+from blog_app.api.app import create_app
+from blog_app.core.config import settings
 from blog_app.domain.entities.users import User
 
 
@@ -34,3 +41,43 @@ def user_factory() -> Any:
         )
 
     return make_user
+
+
+@pytest.fixture
+def redis_settings_stub() -> SimpleNamespace:
+    return SimpleNamespace(
+        jwt_refresh_ttl_minutes=60,
+        user_cache_ttl_minutes=30,
+    )
+
+
+@pytest_asyncio.fixture
+async def redis_client() -> Any:
+    parsed = urlparse(settings.redis_dsn)
+    test_redis_dsn = parsed._replace(path="/15").geturl()
+    redis = Redis.from_url(test_redis_dsn, decode_responses=True)
+    try:
+        await redis.flushdb()
+    except RedisConnectionError:
+        await redis.aclose()
+        pytest.skip("Redis is not available for integration tests")
+    try:
+        yield redis
+    finally:
+        await redis.flushdb()
+        await redis.aclose()
+
+
+@pytest.fixture
+def app() -> Any:
+    app = create_app()
+    try:
+        yield app
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(app) -> Any:
+    with TestClient(app) as test_client:
+        yield test_client
