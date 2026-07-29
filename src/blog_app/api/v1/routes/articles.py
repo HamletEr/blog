@@ -28,7 +28,7 @@ router = APIRouter(
 @router.get("/", status_code=status.HTTP_200_OK)
 async def get_articles_list(
     use_case: GetListArticlesUseCaseDep,
-    limit_on_page: Annotated[int, Query(ge=0, le=1000)] = 1000,
+    limit_on_page: Annotated[int, Query(ge=1, le=1000)] = 1000,
     page: Annotated[int | None, Query(ge=1)] = None,
     looking_text: Annotated[str | None, Query(min_length=3, max_length=100)] = None,
 ) -> list[ArticleViewSchema]:
