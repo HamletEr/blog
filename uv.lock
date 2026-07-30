@@ -179,7 +179,7 @@ requires-dist = [
     { name = "argon2-cffi", specifier = "==25.1.0" },
     { name = "asyncpg", specifier = "==0.31.0" },
     { name = "celery", specifier = "==5.5.3" },
-    { name = "celery-types", specifier = ">=0.26.0" },
+    { name = "celery-types", specifier = "==0.26.0" },
     { name = "dynaconf", specifier = "==3.3.2" },
     { name = "fastapi", extras = ["standard"], specifier = "==0.138.2" },
     { name = "greenlet", specifier = "==3.5.3" },
