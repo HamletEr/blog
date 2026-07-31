@@ -78,9 +78,9 @@ class PGArticleRepository(ArticleRepository):
             article.title = article_data.title
         if article_data.content is not None:
             article.content = article_data.content
-        if article_data.category_id is not None:
+        if article_data.clear_category or article_data.category_id is not None:
             article.category_id = article_data.category_id
-        if article_data.image_object_key is not None:
+        if article_data.clear_image or article_data.image_object_key is not None:
             article.image_object_key = article_data.image_object_key
 
         await self._session.flush()

@@ -4,6 +4,7 @@ from starlette import status
 
 from blog_app.domain.exceptions.articles import (
     ArticleNotFoundError,
+    ConflictingArticleUpdate,
     IncorrectLimitOnPage,
     IncorrectPageNumber,
     PermissionDenied as ArticlePermissionDenied,
@@ -108,6 +109,13 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: TooShortText
     ) -> JSONResponse:
         detail = str(exc) or "Text is too short"
+        return _json_error(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
+
+    @app.exception_handler(ConflictingArticleUpdate)
+    async def handle_conflicting_article_update(
+        request: Request, exc: ConflictingArticleUpdate
+    ) -> JSONResponse:
+        detail = str(exc) or "Conflicting article update"
         return _json_error(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
 
     @app.exception_handler(IncorrectLimitOnPage)

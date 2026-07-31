@@ -277,7 +277,47 @@ def test_update_article_returns_updated_article(
     assert args[1].content is None
     assert args[1].category_id is None
     assert args[1].image_object_key is None
+    assert args[1].clear_category is False
+    assert args[1].clear_image is False
     assert use_case.execute.await_args.kwargs["image"] is None
+
+
+def test_update_article_passes_clear_flags_to_use_case(
+    app,
+    client,
+    monkeypatch: pytest.MonkeyPatch,
+    user_factory,
+) -> None:
+    admin_user = user_factory(is_admin=True)
+    authenticate_client(monkeypatch, client, admin_user)
+    article = make_article(
+        data=ArticleData(
+            title="First article",
+            content="Some interesting content",
+            category_id=None,
+            image_object_key=None,
+        )
+    )
+
+    use_case = AsyncMock()
+    use_case.execute.return_value = article
+    app.dependency_overrides[get_update_article_use_case] = lambda: use_case
+    override_object_storage(app)
+
+    response = client.patch(
+        f"/api/v1/articles/{article.id}",
+        data={
+            "clear_category": "true",
+            "clear_image": "true",
+        },
+    )
+
+    assert response.status_code == 202
+    update_data = use_case.execute.await_args.args[1]
+    assert update_data.category_id is None
+    assert update_data.image_object_key is None
+    assert update_data.clear_category is True
+    assert update_data.clear_image is True
 
 
 def test_update_article_returns_404_when_missing(

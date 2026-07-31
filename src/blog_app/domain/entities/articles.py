@@ -17,6 +17,8 @@ class ArticleUpdateData:
     content: str | None = None
     category_id: int | None = None
     image_object_key: str | None = None
+    clear_category: bool = False
+    clear_image: bool = False
 
 
 @dataclass

@@ -14,6 +14,10 @@ class TooShortText(ArticleError):
     pass
 
 
+class ConflictingArticleUpdate(ArticleError):
+    pass
+
+
 class IncorrectLimitOnPage(ArticleError):
     pass
 

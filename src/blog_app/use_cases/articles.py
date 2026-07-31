@@ -6,6 +6,7 @@ from blog_app.domain.entities.files import FileToUpload
 from blog_app.domain.entities.users import User
 from blog_app.domain.exceptions.articles import (
     ArticleNotFoundError,
+    ConflictingArticleUpdate,
     IncorrectLimitOnPage,
     IncorrectPageNumber,
     TooShortText,
@@ -30,7 +31,10 @@ def validate_article_data(article_data: ArticleData) -> None:
         raise TooShortText(f"Content minimal length is {MIN_CONTENT_LENGTH} characters")
 
 
-def validate_article_update_data(article_data: ArticleUpdateData) -> None:
+def validate_article_update_data(
+    article_data: ArticleUpdateData,
+    image: FileToUpload | None = None,
+) -> None:
     if article_data.title is not None and len(article_data.title) < MIN_TITLE_LENGTH:
         raise TooShortText(f"Title minimal length is {MIN_TITLE_LENGTH} characters")
 
@@ -39,6 +43,10 @@ def validate_article_update_data(article_data: ArticleUpdateData) -> None:
         and len(article_data.content) < MIN_CONTENT_LENGTH
     ):
         raise TooShortText(f"Content minimal length is {MIN_CONTENT_LENGTH} characters")
+    if article_data.clear_category and article_data.category_id is not None:
+        raise ConflictingArticleUpdate("clear_category cannot be used with category_id")
+    if article_data.clear_image and image is not None:
+        raise ConflictingArticleUpdate("clear_image cannot be used with image")
 
 
 def validate_looking_text(text: str) -> None:
@@ -125,14 +133,16 @@ class UpdateArticle(BaseArticleUseCase):
         image: FileToUpload | None = None,
     ) -> Article:
         require_admin(get_authenticated_user(self.user))
-        validate_article_update_data(article_data)
+        validate_article_update_data(article_data, image)
         old_image_object_key = None
-        if image is not None:
+        if image is not None or article_data.clear_image:
             article = await self.repo.get_by_id(article_id)
             if article is None:
                 raise ArticleNotFoundError()
 
             old_image_object_key = article.data.image_object_key
+
+        if image is not None:
             stored_image = await self.object_storage.upload_file(image)
             article_data.image_object_key = stored_image.object_key
         updated_article = await self.repo.update(article_id, article_data)

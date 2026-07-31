@@ -36,6 +36,8 @@ OptionalTitleForm = Annotated[str | None, Form(min_length=2, max_length=100)]
 OptionalContentForm = Annotated[str | None, Form(min_length=2, max_length=1_000_000)]
 CategoryIdForm = Annotated[int | None, Form(ge=1)]
 ImageFile = Annotated[UploadFile | None, File()]
+ClearCategoryForm = Annotated[bool, Form()]
+ClearImageForm = Annotated[bool, Form()]
 
 
 def map_article_to_schema(
@@ -127,6 +129,8 @@ async def update_article(
     content: OptionalContentForm = None,
     category_id: CategoryIdForm = None,
     image: ImageFile = None,
+    clear_category: ClearCategoryForm = False,
+    clear_image: ClearImageForm = False,
 ) -> ArticleViewSchema:
     article_domain = await use_case.execute(
         article_id,
@@ -135,6 +139,8 @@ async def update_article(
             content=content,
             category_id=category_id,
             image_object_key=None,
+            clear_category=clear_category,
+            clear_image=clear_image,
         ),
         image=map_upload_file_to_domain(image),
     )
