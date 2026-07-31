@@ -146,6 +146,7 @@ services:
         done
 
         mc mb --ignore-existing "local/$$BLOG_APP_S3__BUCKET"
+        mc anonymous set download "local/$$BLOG_APP_S3__BUCKET"
 
 volumes:
   postgres_data:

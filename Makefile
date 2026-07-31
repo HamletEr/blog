@@ -1,6 +1,6 @@
 ROOT=src
 
-.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down db-migrate-dev up up-dev
+.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down up dev-db-migrate
 
 help:
 	@echo "       Tool           |       Command        |         Description"
@@ -33,8 +33,10 @@ types:
 
 check: rlint rfmt types
 
+
 tests:
 	uv run pytest -v --cov --cov-branch --cov-report=term-missing
+
 
 db-up:
 	docker compose up -d blog_app_db
@@ -51,7 +53,4 @@ up:
 down:
 	docker compose down
 
-db-migrate-dev: db-up migrate migrate-current down
-
-up-dev:
-	docker compose up -d blog_app_db blog_app_redis && uv run uvicorn --app-dir src blog_app.main:app --reload
+dev-db-migrate: db-up migrate migrate-current down

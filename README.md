@@ -55,15 +55,6 @@ make up
 make down
 ```
 
-Запуск приложения локально, а PostgreSQL и Redis в Docker:
-
-```bash
-make up-dev
-```
-
-Важно: `make up-dev` не поднимает RabbitMQ, Mailpit и Celery worker. Для проверки
-почтовой очереди используйте `make up`.
-
 ## Полезные адреса
 
 API:
@@ -123,7 +114,7 @@ make migrate-current
 контейнеры:
 
 ```bash
-make db-migrate-dev
+make dev-db-migrate
 ```
 
 ## Проверки
@@ -150,7 +141,7 @@ make tests
 - `domain` - сущности, интерфейсы, доменные исключения и контракты сервисов;
 - `use_cases` - прикладные сценарии;
 - `infrastructure` - реализации репозиториев, сервисов и FastAPI-зависимостей;
-- `core` - конфики
+- `core` - конфиги
 - `api` - HTTP-маршруты, схемы, middleware и exception handlers;
 - `tasks` - Celery app и фоновые задачи.
 
