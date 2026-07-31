@@ -13,6 +13,11 @@ from blog_app.domain.exceptions.categories import (
     CategoryAlreadyExists,
     CategoryNotFound,
 )
+from blog_app.domain.exceptions.object_storage import (
+    ObjectUploadError,
+    UnsupportedFileTypeError,
+    UploadedFileTooLargeError,
+)
 from blog_app.domain.exceptions.tokens import ExpiredToken, InvalidToken
 from blog_app.domain.exceptions.users import (
     AuthenticationRequired,
@@ -151,3 +156,23 @@ def register_exception_handlers(app: FastAPI) -> None:
         request: Request, exc: CategoryNotFound
     ) -> JSONResponse:
         return _json_error(status.HTTP_404_NOT_FOUND, "Category not found")
+
+    @app.exception_handler(UnsupportedFileTypeError)
+    async def handle_unsupported_file_type(
+        request: Request, exc: UnsupportedFileTypeError
+    ) -> JSONResponse:
+        detail = str(exc) or "Unsupported file type"
+        return _json_error(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
+
+    @app.exception_handler(UploadedFileTooLargeError)
+    async def handle_uploaded_file_too_large(
+        request: Request, exc: UploadedFileTooLargeError
+    ) -> JSONResponse:
+        detail = str(exc) or "Uploaded file is too large"
+        return _json_error(status.HTTP_422_UNPROCESSABLE_ENTITY, detail)
+
+    @app.exception_handler(ObjectUploadError)
+    async def handle_object_upload_error(
+        request: Request, exc: ObjectUploadError
+    ) -> JSONResponse:
+        return _json_error(status.HTTP_502_BAD_GATEWAY, "Object storage is unavailable")

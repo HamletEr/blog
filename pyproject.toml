@@ -8,7 +8,6 @@ dependencies = [
     "asyncpg==0.31.0",
     "boto3==1.42.0",
     "celery==5.5.3",
-    "celery-types==0.26.0",
     "dynaconf==3.3.2",
     "fastapi[standard]==0.138.2",
     "greenlet==3.5.3",
@@ -22,6 +21,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "boto3-stubs[s3]==1.42.97",
+    "celery-types==0.26.0",
     "mypy==2.1.0",
     "pre-commit==4.6.0",
     "pytest==9.1.1",
