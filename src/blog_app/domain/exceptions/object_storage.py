@@ -12,3 +12,7 @@ class UploadedFileTooLargeError(ObjectStorageError):
 
 class ObjectUploadError(ObjectStorageError):
     pass
+
+
+class ObjectDeleteError(ObjectStorageError):
+    pass

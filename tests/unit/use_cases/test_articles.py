@@ -7,6 +7,7 @@ import pytest
 
 from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
 from blog_app.domain.entities.files import FileToUpload, StoredObject
+from blog_app.domain.exceptions.object_storage import ObjectDeleteError
 from blog_app.use_cases.articles import CreateArticle, UpdateArticle
 
 
@@ -26,6 +27,14 @@ async def test_create_article_uploads_image_and_saves_object_key(
 ) -> None:
     user = user_factory(is_admin=True)
     repo = AsyncMock()
+    repo.get_by_id.return_value = make_article(
+        ArticleData(
+            title="First article",
+            content="Some interesting content",
+            category_id=1,
+            image_object_key="articles/images/20260731/old-image.webp",
+        )
+    )
     object_storage = AsyncMock()
     object_storage.upload_file.return_value = StoredObject(
         object_key="articles/images/20260731/image.png"
@@ -88,6 +97,14 @@ async def test_update_article_uploads_image_and_updates_object_key(
     user = user_factory(is_admin=True)
     article_id = uuid4()
     repo = AsyncMock()
+    repo.get_by_id.return_value = make_article(
+        ArticleData(
+            title="First article",
+            content="Some interesting content",
+            category_id=1,
+            image_object_key="articles/images/20260731/old-image.webp",
+        )
+    )
     object_storage = AsyncMock()
     object_storage.upload_file.return_value = StoredObject(
         object_key="articles/images/20260731/new-image.webp"
@@ -119,6 +136,9 @@ async def test_update_article_uploads_image_and_updates_object_key(
     assert saved_update_data.title == "Updated article"
     assert saved_update_data.image_object_key == "articles/images/20260731/new-image.webp"
     assert article.data.image_object_key == "articles/images/20260731/new-image.webp"
+    object_storage.delete_file.assert_awaited_once_with(
+        "articles/images/20260731/old-image.webp"
+    )
 
 
 @pytest.mark.asyncio
@@ -141,3 +161,51 @@ async def test_update_article_without_image_does_not_touch_image_key(
     saved_update_data = repo.update.await_args.args[1]
     assert saved_update_data.content == "Updated article content"
     assert saved_update_data.image_object_key is None
+
+
+@pytest.mark.asyncio
+async def test_update_article_logs_old_image_delete_failure(
+    user_factory,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    user = user_factory(is_admin=True)
+    article_id = uuid4()
+    old_object_key = "articles/images/20260731/old-image.webp"
+    repo = AsyncMock()
+    repo.get_by_id.return_value = make_article(
+        ArticleData(
+            title="First article",
+            content="Some interesting content",
+            category_id=1,
+            image_object_key=old_object_key,
+        )
+    )
+    repo.update.side_effect = lambda _, data: make_article(
+        ArticleData(
+            title=data.title or "First article",
+            content=data.content or "Some interesting content",
+            category_id=data.category_id,
+            image_object_key=data.image_object_key,
+        )
+    )
+    object_storage = AsyncMock()
+    object_storage.upload_file.return_value = StoredObject(
+        object_key="articles/images/20260731/new-image.webp"
+    )
+    object_storage.delete_file.side_effect = ObjectDeleteError()
+    use_case = UpdateArticle(
+        repo=repo,
+        user=user,
+        object_storage=object_storage,
+    )
+    image = FileToUpload(
+        filename="image.webp",
+        content_type="image/webp",
+        file=BytesIO(b"content"),
+    )
+
+    article = await use_case.execute(article_id, ArticleUpdateData(), image=image)
+
+    assert article.data.image_object_key == "articles/images/20260731/new-image.webp"
+    object_storage.delete_file.assert_awaited_once_with(old_object_key)
+    assert "Failed to delete old article image" in caplog.text

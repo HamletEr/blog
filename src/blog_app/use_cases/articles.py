@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
@@ -9,6 +10,7 @@ from blog_app.domain.exceptions.articles import (
     IncorrectPageNumber,
     TooShortText,
 )
+from blog_app.domain.exceptions.object_storage import ObjectDeleteError
 from blog_app.domain.repositories.articles import ArticleRepository
 from blog_app.domain.services.object_storage import ObjectStorage
 from blog_app.use_cases.users import get_authenticated_user, require_admin
@@ -16,6 +18,8 @@ from blog_app.use_cases.users import get_authenticated_user, require_admin
 MIN_TITLE_LENGTH = 3
 MIN_CONTENT_LENGTH = 10
 MIN_LOOKING_TEXT_LENGTH = 3
+
+logger = logging.getLogger(__name__)
 
 
 def validate_article_data(article_data: ArticleData) -> None:
@@ -122,11 +126,31 @@ class UpdateArticle(BaseArticleUseCase):
     ) -> Article:
         require_admin(get_authenticated_user(self.user))
         validate_article_update_data(article_data)
+        old_image_object_key = None
         if image is not None:
+            article = await self.repo.get_by_id(article_id)
+            if article is None:
+                raise ArticleNotFoundError()
+
+            old_image_object_key = article.data.image_object_key
             stored_image = await self.object_storage.upload_file(image)
             article_data.image_object_key = stored_image.object_key
         updated_article = await self.repo.update(article_id, article_data)
+        if old_image_object_key is not None:
+            await self._delete_old_image(old_image_object_key, article_id)
         return updated_article
+
+    async def _delete_old_image(self, object_key: str, article_id: UUID) -> None:
+        try:
+            await self.object_storage.delete_file(object_key)
+        except ObjectDeleteError:
+            logger.exception(
+                "Failed to delete old article image",
+                extra={
+                    "article_id": str(article_id),
+                    "image_object_key": object_key,
+                },
+            )
 
 
 class DeleteArticle(BaseArticleUseCase):

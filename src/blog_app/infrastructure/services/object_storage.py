@@ -10,6 +10,7 @@ from botocore.exceptions import BotoCoreError, ClientError
 from blog_app.core.config import Settings
 from blog_app.domain.entities.files import FileToUpload, StoredObject
 from blog_app.domain.exceptions.object_storage import (
+    ObjectDeleteError,
     ObjectUploadError,
     UnsupportedFileTypeError,
     UploadedFileTooLargeError,
@@ -31,6 +32,9 @@ class S3Client(Protocol):
         Key: str,
         ExtraArgs: dict[str, str],
     ) -> None:
+        pass
+
+    def delete_object(self, Bucket: str, Key: str) -> None:
         pass
 
 
@@ -68,6 +72,16 @@ class S3ObjectStorage(ObjectStorage):
             raise ObjectUploadError("Failed to upload object to S3") from exc
 
         return StoredObject(object_key=object_key)
+
+    async def delete_file(self, object_key: str) -> None:
+        try:
+            await asyncio.to_thread(
+                self._client.delete_object,
+                Bucket=self._bucket,
+                Key=object_key,
+            )
+        except (BotoCoreError, ClientError) as exc:
+            raise ObjectDeleteError("Failed to delete object from S3") from exc
 
     def get_public_url(self, object_key: str) -> str:
         normalized_key = object_key.lstrip("/")

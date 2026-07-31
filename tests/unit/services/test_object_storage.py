@@ -9,6 +9,7 @@ import pytest
 
 from blog_app.domain.entities.files import FileToUpload
 from blog_app.domain.exceptions.object_storage import (
+    ObjectDeleteError,
     ObjectUploadError,
     UnsupportedFileTypeError,
     UploadedFileTooLargeError,
@@ -106,3 +107,26 @@ async def test_s3_object_storage_wraps_client_errors() -> None:
 
     with pytest.raises(ObjectUploadError):
         await storage.upload_file(file_data)
+
+
+@pytest.mark.asyncio
+async def test_s3_object_storage_deletes_file() -> None:
+    client = Mock()
+    storage = S3ObjectStorage(make_settings(), client=client)
+
+    await storage.delete_file("articles/images/20260731/image.png")
+
+    client.delete_object.assert_called_once_with(
+        Bucket="blog-media",
+        Key="articles/images/20260731/image.png",
+    )
+
+
+@pytest.mark.asyncio
+async def test_s3_object_storage_wraps_delete_errors() -> None:
+    client = Mock()
+    client.delete_object.side_effect = BotoCoreError(error_msg="delete failed")
+    storage = S3ObjectStorage(make_settings(), client=client)
+
+    with pytest.raises(ObjectDeleteError):
+        await storage.delete_file("articles/images/20260731/image.png")

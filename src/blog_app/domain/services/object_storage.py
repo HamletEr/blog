@@ -9,5 +9,9 @@ class ObjectStorage(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    async def delete_file(self, object_key: str) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_public_url(self, object_key: str) -> str:
         raise NotImplementedError
