@@ -17,7 +17,7 @@ class ArticleModel(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     title: Mapped[str] = mapped_column(String(100))
     content: Mapped[str] = mapped_column(Text)
-    image_url: Mapped[str | None]
+    image_object_key: Mapped[str | None] = mapped_column(String(1024))
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"))
     category: Mapped[CategoryModel | None] = relationship("CategoryModel")
     created_at: Mapped[datetime] = mapped_column(

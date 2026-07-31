@@ -49,7 +49,7 @@ async def create_article(
             title=article_data.title,
             content=article_data.content,
             category_id=article_data.category_id,
-            image_url=(
+            image_object_key=(
                 str(article_data.image_url)
                 if article_data.image_url is not None
                 else None
@@ -79,7 +79,7 @@ async def update_article(
             title=article_data.title,
             content=article_data.content,
             category_id=article_data.category_id,
-            image_url=(
+            image_object_key=(
                 str(article_data.image_url)
                 if article_data.image_url is not None
                 else None

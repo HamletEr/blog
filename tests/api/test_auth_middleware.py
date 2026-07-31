@@ -202,7 +202,7 @@ def test_articles_list_is_public(app, client) -> None:
                 title="First article",
                 content="Some content",
                 category_id=1,
-                image_url="https://example.com/image.png",
+                image_object_key="https://example.com/image.png",
             ),
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),

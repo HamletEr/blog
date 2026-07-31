@@ -8,7 +8,7 @@ class ArticleData:
     title: str
     content: str
     category_id: int | None
-    image_url: str | None
+    image_object_key: str | None
 
 
 @dataclass

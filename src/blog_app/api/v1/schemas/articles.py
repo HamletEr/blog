@@ -3,6 +3,7 @@ from typing import Annotated, Any
 
 from pydantic import (
     UUID4,
+    AliasChoices,
     AnyUrl,
     BaseModel,
     BeforeValidator,
@@ -31,7 +32,9 @@ class ArticleDataSchema(BaseModel):
     title: Title
     content: Content
     category_id: PositiveInt | None
-    image_url: AnyUrl | None
+    image_url: AnyUrl | None = Field(
+        validation_alias=AliasChoices("image_url", "image_object_key")
+    )
 
 
 class ArticleViewSchema(BaseModel):

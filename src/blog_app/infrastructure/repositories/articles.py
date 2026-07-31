@@ -23,7 +23,7 @@ class PGArticleRepository(ArticleRepository):
                 title=model.title,
                 content=model.content,
                 category_id=model.category_id,
-                image_url=model.image_url,
+                image_object_key=model.image_object_key,
             ),
             created_at=model.created_at,
             updated_at=model.updated_at,
@@ -75,7 +75,7 @@ class PGArticleRepository(ArticleRepository):
         article.title = article_data.title
         article.content = article_data.content
         article.category_id = article_data.category_id
-        article.image_url = article_data.image_url
+        article.image_object_key = article_data.image_object_key
 
         await self._session.flush()
         return self._model_to_domain(article)

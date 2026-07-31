@@ -84,7 +84,7 @@ def make_article(**kwargs) -> Article:
                 title="First article",
                 content="Some interesting content",
                 category_id=1,
-                image_url="https://example.com/image.png",
+                image_object_key="https://example.com/image.png",
             ),
         ),
         created_at=kwargs.pop("created_at", datetime.now(UTC)),
@@ -192,7 +192,7 @@ def test_create_article_returns_created_article(
     assert command.title == "First article"
     assert command.content == "Some interesting content"
     assert command.category_id == 1
-    assert command.image_url == "https://example.com/image.png"
+    assert command.image_object_key == "https://example.com/image.png"
 
 
 def test_create_article_returns_403_for_non_admin(
@@ -251,7 +251,7 @@ def test_update_article_returns_updated_article(
     args = use_case.execute.await_args.args
     assert args[0] == article.id
     assert args[1].title == "First article"
-    assert args[1].image_url == "https://example.com/image.png"
+    assert args[1].image_object_key == "https://example.com/image.png"
 
 
 def test_update_article_returns_404_when_missing(
