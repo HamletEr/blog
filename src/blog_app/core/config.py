@@ -72,6 +72,16 @@ class Settings(BaseSettings):
     smtp_from_email: str = _settings.smtp.from_email
     smtp_from_name: str = _settings.smtp.from_name
     smtp_use_tls: bool = _settings.smtp.use_tls
+    s3_endpoint_url: str = _settings.s3.endpoint_url
+    s3_public_url: str = _settings.s3.public_url
+    s3_region: str = _settings.s3.region
+    s3_bucket: str = _settings.s3.bucket
+    s3_access_key: str = _settings.s3.access_key
+    s3_secret_key: str = _settings.s3.secret_key
+    s3_article_images_prefix: str = _settings.s3.article_images_prefix
+    s3_article_image_max_size_bytes: int = int(
+        _settings.s3.article_image_max_size_bytes
+    )
 
 
 settings = Settings()

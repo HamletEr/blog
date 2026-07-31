@@ -27,6 +27,14 @@ from_email = "no-reply@blog.local"
 from_name = "Blog App"
 use_tls = false
 
+[default.s3]
+endpoint_url = "http://localhost:9000"
+public_url = "http://localhost:9000"
+region = "ru-central1"
+bucket = "blog-media"
+article_images_prefix = "articles/images"
+article_image_max_size_bytes = 5242880
+
 
 [development]
 dynaconf_merge = true
