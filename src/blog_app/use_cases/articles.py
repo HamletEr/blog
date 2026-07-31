@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from blog_app.domain.entities.articles import Article, ArticleData
+from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
+from blog_app.domain.entities.files import FileToUpload
 from blog_app.domain.entities.users import User
 from blog_app.domain.exceptions.articles import (
     ArticleNotFoundError,
@@ -9,6 +10,7 @@ from blog_app.domain.exceptions.articles import (
     TooShortText,
 )
 from blog_app.domain.repositories.articles import ArticleRepository
+from blog_app.domain.services.object_storage import ObjectStorage
 from blog_app.use_cases.users import get_authenticated_user, require_admin
 
 MIN_TITLE_LENGTH = 3
@@ -21,6 +23,17 @@ def validate_article_data(article_data: ArticleData) -> None:
         raise TooShortText(f"Title minimal length is {MIN_TITLE_LENGTH} characters")
 
     if len(article_data.content) < MIN_CONTENT_LENGTH:
+        raise TooShortText(f"Content minimal length is {MIN_CONTENT_LENGTH} characters")
+
+
+def validate_article_update_data(article_data: ArticleUpdateData) -> None:
+    if article_data.title is not None and len(article_data.title) < MIN_TITLE_LENGTH:
+        raise TooShortText(f"Title minimal length is {MIN_TITLE_LENGTH} characters")
+
+    if (
+        article_data.content is not None
+        and len(article_data.content) < MIN_CONTENT_LENGTH
+    ):
         raise TooShortText(f"Content minimal length is {MIN_CONTENT_LENGTH} characters")
 
 
@@ -71,16 +84,47 @@ class GetListArticles(BaseArticleUseCase):
 
 
 class CreateArticle(BaseArticleUseCase):
-    async def execute(self, article_data: ArticleData) -> Article:
+    def __init__(
+        self,
+        repo: ArticleRepository,
+        user: User | None,
+        object_storage: ObjectStorage,
+    ) -> None:
+        super().__init__(repo=repo, user=user)
+        self.object_storage = object_storage
+
+    async def execute(
+        self, article_data: ArticleData, image: FileToUpload | None = None
+    ) -> Article:
         require_admin(get_authenticated_user(self.user))
         validate_article_data(article_data)
+        if image is not None:
+            stored_image = await self.object_storage.upload_file(image)
+            article_data.image_object_key = stored_image.object_key
         return await self.repo.create(article_data)
 
 
 class UpdateArticle(BaseArticleUseCase):
-    async def execute(self, article_id: UUID, article_data: ArticleData) -> Article:
+    def __init__(
+        self,
+        repo: ArticleRepository,
+        user: User | None,
+        object_storage: ObjectStorage,
+    ) -> None:
+        super().__init__(repo=repo, user=user)
+        self.object_storage = object_storage
+
+    async def execute(
+        self,
+        article_id: UUID,
+        article_data: ArticleUpdateData,
+        image: FileToUpload | None = None,
+    ) -> Article:
         require_admin(get_authenticated_user(self.user))
-        validate_article_data(article_data)
+        validate_article_update_data(article_data)
+        if image is not None:
+            stored_image = await self.object_storage.upload_file(image)
+            article_data.image_object_key = stored_image.object_key
         updated_article = await self.repo.update(article_id, article_data)
         return updated_article
 

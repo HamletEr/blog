@@ -9,6 +9,9 @@ from blog_app.api.auth_cookies import ACCESS_TOKEN_COOKIE_KEY
 from blog_app.domain.entities.articles import Article, ArticleData
 from blog_app.domain.exceptions.articles import ArticleNotFoundError
 from blog_app.domain.exceptions.users import PermissionDenied
+from blog_app.infrastructure.dependencies.services.object_storage import (
+    get_object_storage,
+)
 from blog_app.infrastructure.dependencies.use_cases import (
     get_article_by_id_use_case,
     get_create_article_use_case,
@@ -35,6 +38,15 @@ class DummyUserCacheRepository:
     def __init__(self, redis: object, settings: object) -> None:
         self.redis = redis
         self.settings = settings
+
+
+def override_object_storage(app) -> Mock:
+    object_storage = Mock()
+    object_storage.get_public_url.side_effect = (
+        lambda object_key: f"https://cdn.example.com/{object_key}"
+    )
+    app.dependency_overrides[get_object_storage] = lambda: object_storage
+    return object_storage
 
 
 def authenticate_client(monkeypatch: pytest.MonkeyPatch, client, user) -> None:
@@ -84,7 +96,7 @@ def make_article(**kwargs) -> Article:
                 title="First article",
                 content="Some interesting content",
                 category_id=1,
-                image_object_key="https://example.com/image.png",
+                image_object_key="articles/images/20260731/image.png",
             ),
         ),
         created_at=kwargs.pop("created_at", datetime.now(UTC)),
@@ -96,18 +108,26 @@ def test_articles_list_is_public_and_returns_articles(app, client) -> None:
     use_case = AsyncMock()
     use_case.execute.return_value = [make_article()]
     app.dependency_overrides[get_list_articles_use_case] = lambda: use_case
+    object_storage = override_object_storage(app)
 
     response = client.get("/api/v1/articles/")
 
     assert response.status_code == 200
     assert response.json()[0]["data"]["title"] == "First article"
-    assert response.json()[0]["data"]["image_url"] == "https://example.com/image.png"
+    assert (
+        response.json()[0]["data"]["image_url"]
+        == "https://cdn.example.com/articles/images/20260731/image.png"
+    )
+    object_storage.get_public_url.assert_called_once_with(
+        "articles/images/20260731/image.png"
+    )
 
 
 def test_articles_list_passes_query_params_to_use_case(app, client) -> None:
     use_case = AsyncMock()
     use_case.execute.return_value = []
     app.dependency_overrides[get_list_articles_use_case] = lambda: use_case
+    override_object_storage(app)
 
     response = client.get(
         "/api/v1/articles/",
@@ -127,6 +147,7 @@ def test_get_article_by_id_is_public(app, client) -> None:
     use_case = AsyncMock()
     use_case.execute.return_value = article
     app.dependency_overrides[get_article_by_id_use_case] = lambda: use_case
+    override_object_storage(app)
 
     response = client.get(f"/api/v1/articles/{article.id}")
 
@@ -140,6 +161,7 @@ def test_get_article_by_id_returns_404_when_missing(app, client) -> None:
     use_case = AsyncMock()
     use_case.execute.side_effect = ArticleNotFoundError()
     app.dependency_overrides[get_article_by_id_use_case] = lambda: use_case
+    override_object_storage(app)
 
     response = client.get(f"/api/v1/articles/{article_id}")
 
@@ -150,11 +172,10 @@ def test_get_article_by_id_returns_404_when_missing(app, client) -> None:
 def test_create_article_requires_authentication(client) -> None:
     response = client.post(
         "/api/v1/articles/",
-        json={
+        data={
             "title": "First article",
             "content": "Some interesting content",
             "category_id": 1,
-            "image_url": "https://example.com/image.png",
         },
     )
 
@@ -175,15 +196,16 @@ def test_create_article_returns_created_article(
     use_case = AsyncMock()
     use_case.execute.return_value = article
     app.dependency_overrides[get_create_article_use_case] = lambda: use_case
+    override_object_storage(app)
 
     response = client.post(
         "/api/v1/articles/",
-        json={
+        data={
             "title": "First article",
             "content": "Some interesting content",
             "category_id": 1,
-            "image_url": "https://example.com/image.png",
         },
+        files={"image": ("image.png", b"content", "image/png")},
     )
 
     assert response.status_code == 201
@@ -192,7 +214,10 @@ def test_create_article_returns_created_article(
     assert command.title == "First article"
     assert command.content == "Some interesting content"
     assert command.category_id == 1
-    assert command.image_object_key == "https://example.com/image.png"
+    assert command.image_object_key is None
+    image = use_case.execute.await_args.kwargs["image"]
+    assert image.filename == "image.png"
+    assert image.content_type == "image/png"
 
 
 def test_create_article_returns_403_for_non_admin(
@@ -207,14 +232,14 @@ def test_create_article_returns_403_for_non_admin(
     use_case = AsyncMock()
     use_case.execute.side_effect = PermissionDenied()
     app.dependency_overrides[get_create_article_use_case] = lambda: use_case
+    override_object_storage(app)
 
     response = client.post(
         "/api/v1/articles/",
-        json={
+        data={
             "title": "First article",
             "content": "Some interesting content",
             "category_id": 1,
-            "image_url": "https://example.com/image.png",
         },
     )
 
@@ -235,14 +260,12 @@ def test_update_article_returns_updated_article(
     use_case = AsyncMock()
     use_case.execute.return_value = article
     app.dependency_overrides[get_update_article_use_case] = lambda: use_case
+    override_object_storage(app)
 
-    response = client.put(
+    response = client.patch(
         f"/api/v1/articles/{article.id}",
-        json={
+        data={
             "title": "First article",
-            "content": "Some interesting content",
-            "category_id": 1,
-            "image_url": "https://example.com/image.png",
         },
     )
 
@@ -251,7 +274,10 @@ def test_update_article_returns_updated_article(
     args = use_case.execute.await_args.args
     assert args[0] == article.id
     assert args[1].title == "First article"
-    assert args[1].image_object_key == "https://example.com/image.png"
+    assert args[1].content is None
+    assert args[1].category_id is None
+    assert args[1].image_object_key is None
+    assert use_case.execute.await_args.kwargs["image"] is None
 
 
 def test_update_article_returns_404_when_missing(
@@ -267,14 +293,14 @@ def test_update_article_returns_404_when_missing(
     use_case = AsyncMock()
     use_case.execute.side_effect = ArticleNotFoundError()
     app.dependency_overrides[get_update_article_use_case] = lambda: use_case
+    override_object_storage(app)
 
-    response = client.put(
+    response = client.patch(
         f"/api/v1/articles/{article_id}",
-        json={
+        data={
             "title": "First article",
             "content": "Some interesting content",
             "category_id": 1,
-            "image_url": "https://example.com/image.png",
         },
     )
 
@@ -338,11 +364,10 @@ def test_create_article_validates_payload_for_authenticated_user(
 
     response = client.post(
         "/api/v1/articles/",
-        json={
+        data={
             "title": "a",
             "content": "b",
             "category_id": 1,
-            "image_url": "https://example.com/image.png",
         },
     )
 

@@ -3,7 +3,6 @@ from typing import Annotated, Any
 
 from pydantic import (
     UUID4,
-    AliasChoices,
     AnyUrl,
     BaseModel,
     BeforeValidator,
@@ -26,22 +25,20 @@ Title = Annotated[
 Content = Annotated[str, Field(min_length=2, max_length=1_000_000)]
 
 
-class ArticleDataSchema(BaseModel):
+class ArticleDataViewSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     title: Title
     content: Content
     category_id: PositiveInt | None
-    image_url: AnyUrl | None = Field(
-        validation_alias=AliasChoices("image_url", "image_object_key")
-    )
+    image_url: AnyUrl | None
 
 
 class ArticleViewSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID4
-    data: ArticleDataSchema
+    data: ArticleDataViewSchema
     created_at: datetime
     updated_at: datetime
 

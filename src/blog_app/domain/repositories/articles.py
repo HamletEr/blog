@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from blog_app.domain.entities.articles import Article, ArticleData
+from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
 
 
 class ArticleRepository(ABC):
@@ -17,7 +17,9 @@ class ArticleRepository(ABC):
     async def create(self, article_data: ArticleData) -> Article: ...
 
     @abstractmethod
-    async def update(self, article_id: UUID, article_data: ArticleData) -> Article: ...
+    async def update(
+        self, article_id: UUID, article_data: ArticleUpdateData
+    ) -> Article: ...
 
     @abstractmethod
     async def delete(self, article_id: UUID) -> None: ...

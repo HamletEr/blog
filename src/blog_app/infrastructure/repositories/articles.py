@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from blog_app.domain.entities.articles import Article, ArticleData
+from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
 from blog_app.domain.exceptions.articles import ArticleNotFoundError
 from blog_app.domain.repositories.articles import ArticleRepository
 from blog_app.infrastructure.models.articles import ArticleModel
@@ -67,15 +67,21 @@ class PGArticleRepository(ArticleRepository):
 
         return self._model_to_domain(article)
 
-    async def update(self, article_id: UUID, article_data: ArticleData) -> Article:
+    async def update(
+        self, article_id: UUID, article_data: ArticleUpdateData
+    ) -> Article:
         article = await self._get_model_by_id(article_id)
         if not article:
             raise ArticleNotFoundError()
 
-        article.title = article_data.title
-        article.content = article_data.content
-        article.category_id = article_data.category_id
-        article.image_object_key = article_data.image_object_key
+        if article_data.title is not None:
+            article.title = article_data.title
+        if article_data.content is not None:
+            article.content = article_data.content
+        if article_data.category_id is not None:
+            article.category_id = article_data.category_id
+        if article_data.image_object_key is not None:
+            article.image_object_key = article_data.image_object_key
 
         await self._session.flush()
         return self._model_to_domain(article)

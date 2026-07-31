@@ -19,6 +19,9 @@ from blog_app.infrastructure.dependencies.services.jwt_service import JWTService
 from blog_app.infrastructure.dependencies.services.notifications import (
     UserRegistrationNotifierDep,
 )
+from blog_app.infrastructure.dependencies.services.object_storage import (
+    ObjectStorageDep,
+)
 from blog_app.infrastructure.dependencies.services.passwords import (
     PasswordComplexityValidatorDep,
     PasswordHasherDep,
@@ -375,18 +378,18 @@ GetListArticlesUseCaseDep = Annotated[
 
 
 def get_create_article_use_case(
-    repo: ArticleRepoDep, user: CurrentUserDep
+    repo: ArticleRepoDep, user: CurrentUserDep, object_storage: ObjectStorageDep
 ) -> CreateArticle:
-    return CreateArticle(repo=repo, user=user)
+    return CreateArticle(repo=repo, user=user, object_storage=object_storage)
 
 
 CreateArticleUseCaseDep = Annotated[CreateArticle, Depends(get_create_article_use_case)]
 
 
 def get_update_article_use_case(
-    repo: ArticleRepoDep, user: CurrentUserDep
+    repo: ArticleRepoDep, user: CurrentUserDep, object_storage: ObjectStorageDep
 ) -> UpdateArticle:
-    return UpdateArticle(repo=repo, user=user)
+    return UpdateArticle(repo=repo, user=user, object_storage=object_storage)
 
 
 UpdateArticleUseCaseDep = Annotated[UpdateArticle, Depends(get_update_article_use_case)]

@@ -12,6 +12,14 @@ class ArticleData:
 
 
 @dataclass
+class ArticleUpdateData:
+    title: str | None = None
+    content: str | None = None
+    category_id: int | None = None
+    image_object_key: str | None = None
+
+
+@dataclass
 class Article:
     id: UUID
     is_active: bool
