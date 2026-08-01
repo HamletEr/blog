@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import desc, func, literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
@@ -46,12 +46,13 @@ class PGArticleRepository(ArticleRepository):
     ) -> list[Article]:
         stmt = select(ArticleModel).where(ArticleModel.is_active)
         if looking_text:
-            stmt = stmt.where(
-                or_(
-                    ArticleModel.title.ilike(f"%{looking_text}%"),
-                    ArticleModel.content.ilike(f"%{looking_text}%"),
-                )
+            search_query = func.websearch_to_tsquery(
+                literal_column("'russian'"), looking_text
             )
+            rank = func.ts_rank_cd(ArticleModel.search_vector, search_query)
+            stmt = stmt.where(
+                ArticleModel.search_vector.op("@@")(search_query)
+            ).order_by(desc(rank), ArticleModel.created_at.desc())
         if limit_on_page:
             stmt = stmt.limit(limit_on_page)
         if page and limit_on_page:
