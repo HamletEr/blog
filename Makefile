@@ -1,6 +1,6 @@
 ROOT=src
 
-.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down up dev-db-migrate seed-dev
+.PHONY: help rlint rfmt types check tests dev-db-up migrate migrate-current down up dev-db-migrate dev-seed
 
 help:
 	@echo "       Tool           |       Command        |         Description"
@@ -40,7 +40,7 @@ tests:
 	uv run pytest -v --cov --cov-branch --cov-report=term-missing
 
 
-db-up:
+dev-db-up:
 	docker compose up -d blog_app_db
 
 migrate:
@@ -55,7 +55,7 @@ up:
 down:
 	docker compose down
 
-dev-db-migrate: db-up migrate migrate-current down
+dev-db-migrate: dev-db-up migrate migrate-current
 
-seed-dev:
+dev-seed:
 	uv run python -m scripts.seed_dev

@@ -3,10 +3,12 @@
 API корпоративного блога.
 
 Проект построен на FastAPI. Для хранения данных используется PostgreSQL, для
-кеша и refresh-токенов - Redis, для фоновых задач - Celery с RabbitMQ. Почтовые
-уведомления при локальной разработке отправляются в Mailpit.
+кеша и refresh-токенов - Redis, для фоновых задач - Celery с RabbitMQ. Для хранения 
+изображений для статей используется S3(Minio). Почтовые уведомления _при локальной 
+разработке_ отправляются в Mailpit. 
 
-## Окружение
+
+### Окружение
 
 - Python 3.12.13
 - uv
@@ -19,7 +21,7 @@ Python-зависимости описаны в `pyproject.toml`. Установ
 uv sync
 ```
 
-## Конфигурация
+### Конфигурация
 
 В проекте используются два источника конфигурации:
 
@@ -32,12 +34,14 @@ uv sync
 cp .env.example .env
 ```
 
-## Запуск
+### Быстрый запуск
 
-Полный запуск проекта через Docker Compose:
-
-```bash
-make up
+```text
+uv sync                      # подготовить окружение
+cp -n .env.example .env      # копировать .env (linux/mac) или `copy` в Win
+make dev-db-migrate          # поднять БД и применить миграции
+make dev-seed                # заполнить БД демо-данными
+make up                      # поднять все сервисы
 ```
 
 Будут подняты:
@@ -47,6 +51,7 @@ make up
 - Redis;
 - RabbitMQ;
 - Celery worker;
+- Minio + образ для инициализации бакетов
 - Mailpit.
 
 Остановить контейнеры:
@@ -55,24 +60,12 @@ make up
 make down
 ```
 
-## Полезные адреса
-
-API:
-
-```text
-http://localhost:8000
-```
+### Полезные адреса
 
 Swagger UI:
 
 ```text
 http://localhost:8000/docs
-```
-
-Health check:
-
-```text
-GET /api/v1/health/live
 ```
 
 RabbitMQ Management:
@@ -93,31 +86,9 @@ Minio UI:
 http://localhost:9001
 ```
 
-Порты задаются в `.env`, поэтому фактические адреса могут отличаться, если вы
-изменили локальную конфигурацию.
+* _Порты задаются в `.env`, поэтому фактические адреса могут отличаться._
 
-## Миграции
-
-Применить миграции:
-
-```bash
-make migrate
-```
-
-Посмотреть текущую миграцию:
-
-```bash
-make migrate-current
-```
-
-Поднять базу, применить миграции, проверить текущую ревизию и остановить
-контейнеры:
-
-```bash
-make dev-db-migrate
-```
-
-## Проверки
+### Проверки
 
 Lint, format и mypy:
 
@@ -134,7 +105,7 @@ make tests
 Интеграционные тесты, которым нужен Redis, пропускаются фикстурами, если Redis
 недоступен.
 
-## Архитектура
+### Архитектура
 
 Проект построен по src-layout. Слои:
 
@@ -145,7 +116,7 @@ make tests
 - `api` - HTTP-маршруты, схемы, middleware и exception handlers;
 - `tasks` - Celery app и фоновые задачи.
 
-## Mailpit
+### Mailpit
 
 Mailpit используется только для локальной разработки. Это SMTP-сервер, который
 принимает письма и показывает их в web UI.
@@ -168,7 +139,7 @@ email, и не отправляет письмо наружу.
 
 Для реального SMTP-провайдера достаточно заменить SMTP-переменные в `.env`.
 
-## RabbitMQ и Celery
+### RabbitMQ и Celery
 
 В `docker-compose.yml` намеренно используется:
 
@@ -178,7 +149,7 @@ image: rabbitmq:3.13-management
 
 Причина: RabbitMQ 4.x строже относится к устаревшим transient non-exclusive
 queues, которые Celery/Kombu использует при старте worker для служебного
-механизма `mingle`/control. С `rabbitmq:4-management` worker может подключиться
+механизма `mingle`/`control`. С `rabbitmq:4-management` worker может подключиться
 к брокеру, но затем циклически падать с ошибкой: 
 `Feature `transient_nonexcl_queues` is deprecated.`
 В таком состоянии задачи видны в RabbitMQ, но worker их не обрабатывает.
@@ -187,7 +158,7 @@ RabbitMQ `3.13-management` выбран как стабильный вариан
 Celery 5.x. Если позже потребуется RabbitMQ 4.x, нужно в обязательном порядке
 проверять совместимость с Celery.
 
-## Частые команды
+### Частые команды
 
 ```bash
 uv sync
@@ -197,7 +168,7 @@ make down
 make check
 make tests
 ```
-Полный список команд в `Makefile`.
+_**Полный список команд в `Makefile`.**_
 
 Локальный запуск FastAPI:
 
@@ -210,6 +181,3 @@ uv run uvicorn --app-dir src blog_app.main:app --reload
 ```bash
 uv run celery -A blog_app.tasks.celery_app:celery_app worker --loglevel=info
 ```
-
-При локальном запуске worker вне Docker убедитесь, что RabbitMQ и Mailpit
-запущены, а `.env` указывает на hostnames, доступные из локального процесса.
