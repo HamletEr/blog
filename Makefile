@@ -1,6 +1,6 @@
 ROOT=src
 
-.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down up dev-db-migrate
+.PHONY: help rlint rfmt types check tests db-up migrate migrate-current down up dev-db-migrate seed-dev
 
 help:
 	@echo "       Tool           |       Command        |         Description"
@@ -21,6 +21,8 @@ help:
 	@echo "       (docker)       |                      |    "
 	@echo "                      |                      |    "
 	@echo " alembic + db(docker) |  make db-migrate-dev |    'make alembic migrations in dev db'"
+	@echo "                      |                      |    "
+	@echo "       seed           |  make seed-dev       |    'fill development db with demo data'"
 
 rlint:
 	uv run ruff check $(ROOT) --fix
@@ -54,3 +56,6 @@ down:
 	docker compose down
 
 dev-db-migrate: db-up migrate migrate-current down
+
+seed-dev:
+	uv run python -m scripts.seed_dev
