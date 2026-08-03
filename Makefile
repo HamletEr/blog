@@ -5,24 +5,24 @@ ROOT=src
 help:
 	@echo "       Tool           |       Command        |         Description"
 	@echo "----------------------|----------------------|---------------------------------------------"
-	@echo "       Ruff           |  make rlint          |    'uv run ruff check . --fix'"
-	@echo "       Ruff           |  make rfmt           |    'uv run ruff format .'"
+	@echo "       Ruff           |  make rlint          |    'uv run ruff check src --fix'"
+	@echo "       Ruff           |  make rfmt           |    'uv run ruff format src'"
 	@echo "                      |                      |    "
-	@echo "       Mypy           |  make types          |    'uv run mypy .'"
+	@echo "       Mypy           |  make types          |    'uv run mypy src'"
 	@echo "                      |                      |    "
 	@echo "        *             |  make check          |    'rlint rfmt types' - Run all checks"
 	@echo "                      |                      |    "
-	@echo "      pytest          |  make tests          |    'uv run pytest -v' + coverage percent"
+	@echo "      pytest          |  make tests          |    'uv run pytest -v' + coverage"
 	@echo "                      |                      |    "
 	@echo "      docker          |  make up             |    'docker compose up -d'"
 	@echo "      docker          |  make down           |    'docker compose down'"
 	@echo "                      |                      |    "
-	@echo " uvicorn + db + redis |  make up-dev         |    'run local uvicorn + db & redis in docker compose'"
-	@echo "       (docker)       |                      |    "
+	@echo "    db (docker)       |  make dev-db-up      |    'docker compose up -d blog_app_db'"
+	@echo "      alembic         |  make migrate        |    'uv run alembic upgrade head'"
+	@echo "      alembic         |  make migrate-current|    'uv run alembic current'"
+	@echo " alembic + db(docker) |  make dev-db-migrate |    'dev-db-up migrate migrate-current'"
 	@echo "                      |                      |    "
-	@echo " alembic + db(docker) |  make db-migrate-dev |    'make alembic migrations in dev db'"
-	@echo "                      |                      |    "
-	@echo "       seed           |  make seed-dev       |    'fill development db with demo data'"
+	@echo "       seed           |  make dev-seed       |    'fill development db with demo data'"
 
 rlint:
 	uv run ruff check $(ROOT) --fix
@@ -44,10 +44,10 @@ dev-db-up:
 	docker compose up -d blog_app_db
 
 migrate:
-	alembic upgrade head
+	uv run alembic upgrade head
 
 migrate-current:
-	alembic current
+	uv run alembic current
 
 up:
 	docker compose up -d
