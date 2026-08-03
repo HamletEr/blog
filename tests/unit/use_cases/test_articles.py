@@ -92,6 +92,42 @@ async def test_create_article_without_image_saves_none(user_factory) -> None:
 
 
 @pytest.mark.asyncio
+async def test_create_article_deletes_uploaded_image_when_create_fails(
+    user_factory,
+) -> None:
+    user = user_factory(is_admin=True)
+    uploaded_object_key = "articles/images/20260731/image.png"
+    repo = AsyncMock()
+    repo.create.side_effect = RuntimeError("DB create failed")
+    object_storage = AsyncMock()
+    object_storage.upload_file.return_value = StoredObject(
+        object_key=uploaded_object_key
+    )
+    use_case = CreateArticle(
+        repo=repo,
+        user=user,
+        object_storage=object_storage,
+    )
+    article_data = ArticleData(
+        title="First article",
+        content="Some interesting content",
+        category_id=1,
+        image_object_key=None,
+    )
+    image = FileToUpload(
+        filename="image.png",
+        content_type="image/png",
+        file=BytesIO(b"content"),
+    )
+
+    with pytest.raises(RuntimeError, match="DB create failed"):
+        await use_case.execute(article_data, image=image)
+
+    object_storage.upload_file.assert_awaited_once_with(image)
+    object_storage.delete_file.assert_awaited_once_with(uploaded_object_key)
+
+
+@pytest.mark.asyncio
 async def test_update_article_uploads_image_and_updates_object_key(
     user_factory,
 ) -> None:

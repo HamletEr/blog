@@ -110,10 +110,28 @@ class CreateArticle(BaseArticleUseCase):
     ) -> Article:
         require_admin(get_authenticated_user(self.user))
         validate_article_data(article_data)
+        uploaded_image_object_key = None
         if image is not None:
             stored_image = await self.object_storage.upload_file(image)
+            uploaded_image_object_key = stored_image.object_key
             article_data.image_object_key = stored_image.object_key
-        return await self.repo.create(article_data)
+        try:
+            return await self.repo.create(article_data)
+        except Exception:
+            if uploaded_image_object_key is not None:
+                await self._delete_uploaded_image_after_failed_create(
+                    uploaded_image_object_key
+                )
+            raise
+
+    async def _delete_uploaded_image_after_failed_create(self, object_key: str) -> None:
+        try:
+            await self.object_storage.delete_file(object_key)
+        except ObjectDeleteError:
+            logger.exception(
+                "Failed to delete uploaded article image after create failure",
+                extra={"image_object_key": object_key},
+            )
 
 
 class UpdateArticle(BaseArticleUseCase):
