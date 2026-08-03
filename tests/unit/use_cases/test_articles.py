@@ -28,7 +28,7 @@ async def test_create_article_uploads_image_and_saves_object_key(
 ) -> None:
     user = user_factory(is_admin=True)
     repo = AsyncMock()
-    repo.get_by_id.return_value = make_article(
+    repo.get_by_id_for_update.return_value = make_article(
         ArticleData(
             title="First article",
             content="Some interesting content",
@@ -98,7 +98,7 @@ async def test_update_article_uploads_image_and_updates_object_key(
     user = user_factory(is_admin=True)
     article_id = uuid4()
     repo = AsyncMock()
-    repo.get_by_id.return_value = make_article(
+    repo.get_by_id_for_update.return_value = make_article(
         ArticleData(
             title="First article",
             content="Some interesting content",
@@ -133,6 +133,7 @@ async def test_update_article_uploads_image_and_updates_object_key(
     article = await use_case.execute(article_id, update_data, image=image)
 
     object_storage.upload_file.assert_awaited_once_with(image)
+    repo.get_by_id_for_update.assert_awaited_once_with(article_id)
     saved_update_data = repo.update.await_args.args[1]
     assert saved_update_data.title == "Updated article"
     assert saved_update_data.image_object_key == "articles/images/20260731/new-image.webp"
@@ -172,7 +173,7 @@ async def test_update_article_clear_image_removes_image_key_and_old_file(
     article_id = uuid4()
     old_object_key = "articles/images/20260731/old-image.webp"
     repo = AsyncMock()
-    repo.get_by_id.return_value = make_article(
+    repo.get_by_id_for_update.return_value = make_article(
         ArticleData(
             title="First article",
             content="Some interesting content",
@@ -199,6 +200,7 @@ async def test_update_article_clear_image_removes_image_key_and_old_file(
     article = await use_case.execute(article_id, update_data)
 
     object_storage.upload_file.assert_not_called()
+    repo.get_by_id_for_update.assert_awaited_once_with(article_id)
     saved_update_data = repo.update.await_args.args[1]
     assert saved_update_data.clear_image is True
     assert saved_update_data.image_object_key is None
@@ -260,7 +262,7 @@ async def test_update_article_logs_old_image_delete_failure(
     article_id = uuid4()
     old_object_key = "articles/images/20260731/old-image.webp"
     repo = AsyncMock()
-    repo.get_by_id.return_value = make_article(
+    repo.get_by_id_for_update.return_value = make_article(
         ArticleData(
             title="First article",
             content="Some interesting content",
@@ -295,5 +297,46 @@ async def test_update_article_logs_old_image_delete_failure(
     article = await use_case.execute(article_id, ArticleUpdateData(), image=image)
 
     assert article.data.image_object_key == "articles/images/20260731/new-image.webp"
+    repo.get_by_id_for_update.assert_awaited_once_with(article_id)
     object_storage.delete_file.assert_awaited_once_with(old_object_key)
     assert "Failed to delete old article image" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_update_article_deletes_uploaded_image_when_update_fails(
+    user_factory,
+) -> None:
+    user = user_factory(is_admin=True)
+    article_id = uuid4()
+    uploaded_object_key = "articles/images/20260731/new-image.webp"
+    repo = AsyncMock()
+    repo.get_by_id_for_update.return_value = make_article(
+        ArticleData(
+            title="First article",
+            content="Some interesting content",
+            category_id=1,
+            image_object_key=None,
+        )
+    )
+    repo.update.side_effect = RuntimeError("DB update failed")
+    object_storage = AsyncMock()
+    object_storage.upload_file.return_value = StoredObject(
+        object_key=uploaded_object_key
+    )
+    use_case = UpdateArticle(
+        repo=repo,
+        user=user,
+        object_storage=object_storage,
+    )
+    image = FileToUpload(
+        filename="image.webp",
+        content_type="image/webp",
+        file=BytesIO(b"content"),
+    )
+
+    with pytest.raises(RuntimeError, match="DB update failed"):
+        await use_case.execute(article_id, ArticleUpdateData(), image=image)
+
+    repo.get_by_id_for_update.assert_awaited_once_with(article_id)
+    object_storage.upload_file.assert_awaited_once_with(image)
+    object_storage.delete_file.assert_awaited_once_with(uploaded_object_key)

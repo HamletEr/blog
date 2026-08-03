@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
@@ -68,3 +68,25 @@ async def test_get_list_uses_postgres_full_text_search() -> None:
     assert "@@" in compiled_query
     assert "ts_rank_cd" in compiled_query
     assert "ORDER BY" in compiled_query
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_for_update_locks_active_article_row() -> None:
+    session = AsyncMock()
+    result = Mock()
+    result.scalar_one_or_none.return_value = None
+    session.execute.return_value = result
+    repo = PGArticleRepository(session)
+    article_id = uuid4()
+
+    await repo.get_by_id_for_update(article_id)
+
+    stmt = session.execute.await_args.args[0]
+    compiled_query = str(
+        stmt.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert "articles.is_active = true" in compiled_query
+    assert "FOR UPDATE" in compiled_query

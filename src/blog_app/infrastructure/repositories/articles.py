@@ -1,7 +1,7 @@
 from dataclasses import asdict
 from uuid import UUID
 
-from sqlalchemy import desc, func, literal_column, select
+from sqlalchemy import desc, func, literal_column, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
@@ -36,8 +36,27 @@ class PGArticleRepository(ArticleRepository):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def _get_model_by_id_for_update(
+        self, article_id: UUID
+    ) -> ArticleModel | None:
+        stmt = (
+            select(ArticleModel)
+            .where(
+                ArticleModel.id == article_id,
+                ArticleModel.is_active == true(),
+            )
+            .with_for_update()
+        )
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_by_id(self, article_id: UUID) -> Article | None:
         article = await self._get_model_by_id(article_id)
+
+        return self._model_to_domain(article) if article else None
+
+    async def get_by_id_for_update(self, article_id: UUID) -> Article | None:
+        article = await self._get_model_by_id_for_update(article_id)
 
         return self._model_to_domain(article) if article else None
 

@@ -9,6 +9,9 @@ class ArticleRepository(ABC):
     async def get_by_id(self, article_id: UUID) -> Article | None: ...
 
     @abstractmethod
+    async def get_by_id_for_update(self, article_id: UUID) -> Article | None: ...
+
+    @abstractmethod
     async def get_list(
         self, looking_text: str | None, limit_on_page: int | None, page: int | None
     ) -> list[Article]: ...

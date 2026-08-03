@@ -135,8 +135,9 @@ class UpdateArticle(BaseArticleUseCase):
         require_admin(get_authenticated_user(self.user))
         validate_article_update_data(article_data, image)
         old_image_object_key = None
+        new_image_object_key = None
         if image is not None or article_data.clear_image:
-            article = await self.repo.get_by_id(article_id)
+            article = await self.repo.get_by_id_for_update(article_id)
             if article is None:
                 raise ArticleNotFoundError()
 
@@ -144,8 +145,16 @@ class UpdateArticle(BaseArticleUseCase):
 
         if image is not None:
             stored_image = await self.object_storage.upload_file(image)
+            new_image_object_key = stored_image.object_key
             article_data.image_object_key = stored_image.object_key
-        updated_article = await self.repo.update(article_id, article_data)
+        try:
+            updated_article = await self.repo.update(article_id, article_data)
+        except Exception:
+            if new_image_object_key is not None:
+                await self._delete_uploaded_image_after_failed_update(
+                    new_image_object_key, article_id
+                )
+            raise
         if old_image_object_key is not None:
             await self._delete_old_image(old_image_object_key, article_id)
         return updated_article
@@ -156,6 +165,20 @@ class UpdateArticle(BaseArticleUseCase):
         except ObjectDeleteError:
             logger.exception(
                 "Failed to delete old article image",
+                extra={
+                    "article_id": str(article_id),
+                    "image_object_key": object_key,
+                },
+            )
+
+    async def _delete_uploaded_image_after_failed_update(
+        self, object_key: str, article_id: UUID
+    ) -> None:
+        try:
+            await self.object_storage.delete_file(object_key)
+        except ObjectDeleteError:
+            logger.exception(
+                "Failed to delete uploaded article image after update failure",
                 extra={
                     "article_id": str(article_id),
                     "image_object_key": object_key,
