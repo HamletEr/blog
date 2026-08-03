@@ -65,6 +65,7 @@ async def test_get_list_uses_postgres_full_text_search() -> None:
         )
     )
     assert "websearch_to_tsquery('russian', 'python fastapi')" in compiled_query
+    assert "articles.is_active = true" in compiled_query
     assert "@@" in compiled_query
     assert "ts_rank_cd" in compiled_query
     assert "ORDER BY" in compiled_query

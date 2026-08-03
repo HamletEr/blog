@@ -63,7 +63,7 @@ class PGArticleRepository(ArticleRepository):
     async def get_list(
         self, looking_text: str | None, limit_on_page: int | None, page: int | None
     ) -> list[Article]:
-        stmt = select(ArticleModel).where(ArticleModel.is_active)
+        stmt = select(ArticleModel).where(ArticleModel.is_active == true())
         if looking_text:
             search_query = func.websearch_to_tsquery(
                 literal_column("'russian'"), looking_text
