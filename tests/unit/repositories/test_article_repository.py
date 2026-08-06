@@ -1,0 +1,139 @@
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, Mock
+from uuid import uuid4
+
+import pytest
+from sqlalchemy.dialects import postgresql
+
+from blog_app.domain.entities.articles import ArticleUpdateData
+from blog_app.infrastructure.models.articles import ArticleModel
+from blog_app.infrastructure.repositories.articles import PGArticleRepository
+
+
+@pytest.mark.asyncio
+async def test_update_article_can_clear_nullable_fields() -> None:
+    session = AsyncMock()
+    repo = PGArticleRepository(session)
+    article_id = uuid4()
+    article = ArticleModel(
+        id=article_id,
+        is_active=True,
+        title="First article",
+        content="Some interesting content",
+        category_id=1,
+        image_object_key="articles/images/20260731/image.png",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    repo._get_model_by_id = AsyncMock(return_value=article)  # type: ignore[method-assign]
+
+    updated_article = await repo.update(
+        article_id,
+        ArticleUpdateData(clear_category=True, clear_image=True),
+    )
+
+    assert article.category_id is None
+    assert article.image_object_key is None
+    assert updated_article.data.category_id is None
+    assert updated_article.data.image_object_key is None
+    session.flush.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_list_uses_postgres_full_text_search() -> None:
+    session = AsyncMock()
+    repo = PGArticleRepository(session)
+    article = ArticleModel(
+        id=uuid4(),
+        is_active=True,
+        title="Python article",
+        content="Some interesting content",
+        category_id=None,
+        image_object_key=None,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    session.scalar.return_value = 1
+    session.scalars.return_value = [article]
+
+    article_page = await repo.get_page(
+        looking_text="python fastapi",
+        category_id=1,
+        page_size=10,
+        page=1,
+    )
+
+    stmt = session.scalars.await_args.args[0]
+    total_stmt = session.scalar.await_args.args[0]
+    compiled_query = str(
+        stmt.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    compiled_total_query = str(
+        total_stmt.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert article_page.items[0].data.title == "Python article"
+    assert article_page.total == 1
+    assert article_page.page == 1
+    assert article_page.page_size == 10
+    assert "websearch_to_tsquery('russian', 'python fastapi')" in compiled_query
+    assert "articles.is_active = true" in compiled_query
+    assert "articles.category_id = 1" in compiled_query
+    assert "@@" in compiled_query
+    assert "ts_rank_cd" in compiled_query
+    assert "ORDER BY ts_rank_cd" in compiled_query
+    assert "articles.created_at DESC" in compiled_query
+    assert "articles.id ASC" in compiled_query
+    assert "count(*)" in compiled_total_query
+    assert "articles.is_active = true" in compiled_total_query
+    assert "articles.category_id = 1" in compiled_total_query
+    assert "@@" in compiled_total_query
+
+
+@pytest.mark.asyncio
+async def test_get_list_uses_stable_default_ordering() -> None:
+    session = AsyncMock()
+    repo = PGArticleRepository(session)
+
+    await repo.get_page(
+        looking_text=None,
+        category_id=None,
+        page_size=10,
+        page=1,
+    )
+
+    stmt = session.scalars.await_args.args[0]
+    compiled_query = str(
+        stmt.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert "ORDER BY articles.created_at DESC, articles.id ASC" in compiled_query
+
+
+@pytest.mark.asyncio
+async def test_get_by_id_for_update_locks_active_article_row() -> None:
+    session = AsyncMock()
+    result = Mock()
+    result.scalar_one_or_none.return_value = None
+    session.execute.return_value = result
+    repo = PGArticleRepository(session)
+    article_id = uuid4()
+
+    await repo.get_by_id_for_update(article_id)
+
+    stmt = session.execute.await_args.args[0]
+    compiled_query = str(
+        stmt.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert "articles.is_active = true" in compiled_query
+    assert "FOR UPDATE" in compiled_query

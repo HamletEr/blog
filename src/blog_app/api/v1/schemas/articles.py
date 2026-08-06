@@ -1,0 +1,54 @@
+from datetime import datetime
+from typing import Annotated, Any
+
+from pydantic import (
+    UUID4,
+    AnyUrl,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    PositiveInt,
+)
+
+
+def strip_string(value: Any) -> Any:
+    if isinstance(value, str):
+        return value.strip()
+    return value
+
+
+Title = Annotated[
+    str, Field(min_length=2, max_length=100), BeforeValidator(strip_string)
+]
+
+Content = Annotated[str, Field(min_length=2, max_length=1_000_000)]
+
+
+class ArticleDataViewSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    title: Title
+    content: Content
+    category_id: PositiveInt | None
+    image_url: AnyUrl | None
+
+
+class ArticleViewSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID4
+    data: ArticleDataViewSchema
+    created_at: datetime
+    updated_at: datetime
+
+
+class ArticlePageSchema(BaseModel):
+    items: list[ArticleViewSchema]
+    total: int = Field(ge=0)
+    page: PositiveInt
+    page_size: PositiveInt
+
+
+class MessageResponse(BaseModel):
+    detail: str

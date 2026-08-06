@@ -1,0 +1,58 @@
+"""initial
+
+Revision ID: 4093c7ff35bc
+Revises: 
+Create Date: 2026-07-28 23:54:32.641839
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision: str = '4093c7ff35bc'
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    op.create_table('categories',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
+    )
+    op.create_table('users',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('username', sa.String(length=100), nullable=False),
+    sa.Column('email', sa.String(length=100), nullable=False),
+    sa.Column('hashed_password', sa.String(length=100), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('is_admin', sa.Boolean(), nullable=False),
+    sa.Column('registered_at', sa.DateTime(timezone=True), nullable=False),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('email'),
+    sa.UniqueConstraint('email', name='uq_users_email')
+    )
+    op.create_table('articles',
+    sa.Column('id', sa.Uuid(), nullable=False),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('title', sa.String(length=100), nullable=False),
+    sa.Column('content', sa.Text(), nullable=False),
+    sa.Column('image_url', sa.String(), nullable=True),
+    sa.Column('category_id', sa.Integer(), nullable=True),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+
+
+def downgrade() -> None:
+    op.drop_table('articles')
+    op.drop_table('users')
+    op.drop_table('categories')
+

@@ -1,0 +1,47 @@
+[default]
+app_name = "blog-app"
+version = "0.5.0"
+timezone = "Europe/Moscow"
+debug = false
+log_level = "INFO"
+
+[default.redis]
+host = "localhost"
+port = 6379
+db = 0
+user_cache_ttl_minutes = 5
+
+[default.rabbitmq]
+host = "localhost"
+port = 5672
+user = "guest"
+password = "guest"
+queue = "emails"
+
+[default.smtp]
+host = "localhost"
+port = 1025
+user = ""
+password = ""
+from_email = "no-reply@blog.local"
+from_name = "Blog App"
+use_tls = false
+
+[default.s3]
+endpoint_url = "http://localhost:9000"
+public_url = "http://localhost:9000"
+region = "ru-central1"
+bucket = "blog-media"
+article_images_prefix = "articles/images"
+article_image_max_size_bytes = 5242880
+
+
+[development]
+dynaconf_merge = true
+debug = true
+log_level = "DEBUG"
+
+
+[production]
+debug = false
+log_level = "WARNING"

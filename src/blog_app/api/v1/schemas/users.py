@@ -1,0 +1,65 @@
+from datetime import datetime
+from typing import Annotated, Any
+
+from pydantic import (
+    UUID4,
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    EmailStr,
+    Field,
+)
+
+
+def strip_string(value: Any) -> Any:
+    if isinstance(value, str):
+        return value.strip()
+    return value
+
+
+def normalize_email(value: EmailStr) -> EmailStr:
+    return value.lower()
+
+
+Password = Annotated[str, Field(min_length=8, max_length=100)]
+Username = Annotated[
+    str, Field(min_length=1, max_length=100), BeforeValidator(strip_string)
+]
+NormalizedEmail = Annotated[EmailStr, AfterValidator(normalize_email)]
+
+
+class UserCreate(BaseModel):
+    username: Username
+    email: NormalizedEmail
+    password: Password
+
+
+class UserLogin(BaseModel):
+    email: NormalizedEmail
+    password: Password
+
+
+class UserUpdateUsername(BaseModel):
+    username: Username
+
+
+class UserUpdateEmail(BaseModel):
+    email: NormalizedEmail
+    password: Password | None = None
+
+
+class UserUpdatePassword(BaseModel):
+    old_password: Password | None = None
+    new_password: Password
+
+
+class UserInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID4
+    username: Username
+    email: NormalizedEmail
+    is_active: bool
+    is_admin: bool
+    registered_at: datetime
