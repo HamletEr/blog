@@ -77,12 +77,12 @@ def map_upload_file_to_domain(file: UploadFile | None) -> FileToUpload | None:
 async def get_articles_list(
     use_case: GetListArticlesUseCaseDep,
     object_storage: ObjectStorageDep,
-    limit_on_page: Annotated[int, Query(ge=1, le=1000)] = 1000,
-    page: Annotated[int | None, Query(ge=1)] = None,
-    looking_text: Annotated[str | None, Query(min_length=3, max_length=100)] = None,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    page_number: Annotated[int | None, Query(ge=1)] = None,
+    search: Annotated[str | None, Query(min_length=3, max_length=100)] = None,
 ) -> list[ArticleViewSchema]:
     articles_domain = await use_case.execute(
-        looking_text=looking_text, page=page, limit_on_page=limit_on_page
+        looking_text=search, page=page_number, limit_on_page=page_size
     )
     return [
         map_article_to_schema(article, object_storage) for article in articles_domain
