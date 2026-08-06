@@ -7,6 +7,7 @@ from starlette import status
 
 from blog_app.api.v1.schemas.articles import (
     ArticleDataViewSchema,
+    ArticlePageSchema,
     ArticleViewSchema,
     MessageResponse,
 )
@@ -78,19 +79,25 @@ async def get_articles_list(
     use_case: GetListArticlesUseCaseDep,
     object_storage: ObjectStorageDep,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
-    page_number: Annotated[int | None, Query(ge=1)] = None,
+    page_number: Annotated[int, Query(ge=1)] = 1,
     category_id: Annotated[int | None, Query(ge=1)] = None,
     search: Annotated[str | None, Query(min_length=3, max_length=100)] = None,
-) -> list[ArticleViewSchema]:
-    articles_domain = await use_case.execute(
+) -> ArticlePageSchema:
+    article_page = await use_case.execute(
         looking_text=search,
         category_id=category_id,
         page=page_number,
         limit_on_page=page_size,
     )
-    return [
-        map_article_to_schema(article, object_storage) for article in articles_domain
-    ]
+    return ArticlePageSchema(
+        items=[
+            map_article_to_schema(article, object_storage)
+            for article in article_page.items
+        ],
+        total=article_page.total,
+        page=article_page.page,
+        page_size=article_page.page_size,
+    )
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

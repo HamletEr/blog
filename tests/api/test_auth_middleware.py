@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from blog_app.api import middleware as middleware_module
-from blog_app.domain.entities.articles import Article, ArticleData
+from blog_app.domain.entities.articles import Article, ArticleData, ArticlePage
 from blog_app.domain.entities.categories import Category
 from blog_app.domain.exceptions.tokens import ExpiredToken, InvalidToken
 from blog_app.domain.exceptions.users import PermissionDenied, UserNotFound
@@ -194,23 +194,28 @@ def test_categories_list_is_public(app, client) -> None:
 
 def test_articles_list_is_public(app, client) -> None:
     use_case = AsyncMock()
-    use_case.execute.return_value = [
-        Article(
-            id=uuid4(),
-            is_active=True,
-            data=ArticleData(
-                title="First article",
-                content="Some content",
-                category_id=1,
-                image_object_key="https://example.com/image.png",
+    use_case.execute.return_value = ArticlePage(
+        items=[
+            Article(
+                id=uuid4(),
+                is_active=True,
+                data=ArticleData(
+                    title="First article",
+                    content="Some content",
+                    category_id=1,
+                    image_object_key="https://example.com/image.png",
+                ),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             ),
-            created_at=datetime.now(UTC),
-            updated_at=datetime.now(UTC),
-        )
-    ]
+        ],
+        total=1,
+        page=1,
+        page_size=20,
+    )
     app.dependency_overrides[get_list_articles_use_case] = lambda: use_case
 
     response = client.get("/api/v1/articles/")
 
     assert response.status_code == 200
-    assert response.json()[0]["data"]["title"] == "First article"
+    assert response.json()["items"][0]["data"]["title"] == "First article"

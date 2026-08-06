@@ -28,3 +28,11 @@ class Article:
     data: ArticleData
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass
+class ArticlePage:
+    items: list[Article]
+    total: int
+    page: int
+    page_size: int

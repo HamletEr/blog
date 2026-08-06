@@ -6,7 +6,7 @@ import pytest
 
 from blog_app.api import middleware as middleware_module
 from blog_app.api.auth_cookies import ACCESS_TOKEN_COOKIE_KEY
-from blog_app.domain.entities.articles import Article, ArticleData
+from blog_app.domain.entities.articles import Article, ArticleData, ArticlePage
 from blog_app.domain.exceptions.articles import ArticleNotFoundError
 from blog_app.domain.exceptions.users import PermissionDenied
 from blog_app.infrastructure.dependencies.services.object_storage import (
@@ -106,16 +106,24 @@ def make_article(**kwargs) -> Article:
 
 def test_articles_list_is_public_and_returns_articles(app, client) -> None:
     use_case = AsyncMock()
-    use_case.execute.return_value = [make_article()]
+    use_case.execute.return_value = ArticlePage(
+        items=[make_article()],
+        total=1,
+        page=1,
+        page_size=20,
+    )
     app.dependency_overrides[get_list_articles_use_case] = lambda: use_case
     object_storage = override_object_storage(app)
 
     response = client.get("/api/v1/articles/")
 
     assert response.status_code == 200
-    assert response.json()[0]["data"]["title"] == "First article"
+    assert response.json()["total"] == 1
+    assert response.json()["page"] == 1
+    assert response.json()["page_size"] == 20
+    assert response.json()["items"][0]["data"]["title"] == "First article"
     assert (
-        response.json()[0]["data"]["image_url"]
+        response.json()["items"][0]["data"]["image_url"]
         == "https://cdn.example.com/articles/images/20260731/image.png"
     )
     object_storage.get_public_url.assert_called_once_with(
@@ -125,7 +133,12 @@ def test_articles_list_is_public_and_returns_articles(app, client) -> None:
 
 def test_articles_list_passes_query_params_to_use_case(app, client) -> None:
     use_case = AsyncMock()
-    use_case.execute.return_value = []
+    use_case.execute.return_value = ArticlePage(
+        items=[],
+        total=0,
+        page=2,
+        page_size=10,
+    )
     app.dependency_overrides[get_list_articles_use_case] = lambda: use_case
     override_object_storage(app)
 

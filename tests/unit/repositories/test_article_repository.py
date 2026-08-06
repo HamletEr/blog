@@ -53,22 +53,34 @@ async def test_get_list_uses_postgres_full_text_search() -> None:
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
+    session.scalar.return_value = 1
     session.scalars.return_value = [article]
 
-    await repo.get_list(
+    article_page = await repo.get_page(
         looking_text="python fastapi",
         category_id=1,
-        limit_on_page=10,
+        page_size=10,
         page=1,
     )
 
     stmt = session.scalars.await_args.args[0]
+    total_stmt = session.scalar.await_args.args[0]
     compiled_query = str(
         stmt.compile(
             dialect=postgresql.dialect(),
             compile_kwargs={"literal_binds": True},
         )
     )
+    compiled_total_query = str(
+        total_stmt.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert article_page.items[0].data.title == "Python article"
+    assert article_page.total == 1
+    assert article_page.page == 1
+    assert article_page.page_size == 10
     assert "websearch_to_tsquery('russian', 'python fastapi')" in compiled_query
     assert "articles.is_active = true" in compiled_query
     assert "articles.category_id = 1" in compiled_query
@@ -77,6 +89,10 @@ async def test_get_list_uses_postgres_full_text_search() -> None:
     assert "ORDER BY ts_rank_cd" in compiled_query
     assert "articles.created_at DESC" in compiled_query
     assert "articles.id ASC" in compiled_query
+    assert "count(*)" in compiled_total_query
+    assert "articles.is_active = true" in compiled_total_query
+    assert "articles.category_id = 1" in compiled_total_query
+    assert "@@" in compiled_total_query
 
 
 @pytest.mark.asyncio
@@ -84,10 +100,10 @@ async def test_get_list_uses_stable_default_ordering() -> None:
     session = AsyncMock()
     repo = PGArticleRepository(session)
 
-    await repo.get_list(
+    await repo.get_page(
         looking_text=None,
         category_id=None,
-        limit_on_page=10,
+        page_size=10,
         page=1,
     )
 

@@ -43,5 +43,12 @@ class ArticleViewSchema(BaseModel):
     updated_at: datetime
 
 
+class ArticlePageSchema(BaseModel):
+    items: list[ArticleViewSchema]
+    total: int = Field(ge=0)
+    page: PositiveInt
+    page_size: PositiveInt
+
+
 class MessageResponse(BaseModel):
     detail: str

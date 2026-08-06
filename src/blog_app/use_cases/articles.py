@@ -1,7 +1,12 @@
 import logging
 from uuid import UUID
 
-from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
+from blog_app.domain.entities.articles import (
+    Article,
+    ArticleData,
+    ArticlePage,
+    ArticleUpdateData,
+)
 from blog_app.domain.entities.files import FileToUpload
 from blog_app.domain.entities.users import User
 from blog_app.domain.exceptions.articles import (
@@ -56,14 +61,10 @@ def validate_looking_text(text: str) -> None:
         )
 
 
-def validate_page_and_limit_on_page(
-    page: int | None, limit_on_page: int | None
-) -> tuple[int | None, int | None]:
-    if page and not limit_on_page:
-        page = None
-    if limit_on_page is not None and limit_on_page <= 0:
+def validate_page_and_limit_on_page(page: int, limit_on_page: int) -> tuple[int, int]:
+    if limit_on_page <= 0:
         raise IncorrectLimitOnPage("Limit in page must be greater than 0")
-    if page is not None and page <= 0:
+    if page <= 0:
         raise IncorrectPageNumber("Page must be greater than 0")
     return page, limit_on_page
 
@@ -87,13 +88,13 @@ class GetListArticles(BaseArticleUseCase):
         self,
         looking_text: str | None = None,
         category_id: int | None = None,
-        limit_on_page: int | None = None,
-        page: int | None = None,
-    ) -> list[Article]:
+        limit_on_page: int = 20,
+        page: int = 1,
+    ) -> ArticlePage:
         if looking_text is not None:
             validate_looking_text(looking_text)
         page, limit_on_page = validate_page_and_limit_on_page(page, limit_on_page)
-        return await self.repo.get_list(looking_text, category_id, limit_on_page, page)
+        return await self.repo.get_page(looking_text, category_id, limit_on_page, page)
 
 
 class CreateArticle(BaseArticleUseCase):

@@ -4,7 +4,12 @@ from uuid import UUID
 from sqlalchemy import desc, func, literal_column, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
+from blog_app.domain.entities.articles import (
+    Article,
+    ArticleData,
+    ArticlePage,
+    ArticleUpdateData,
+)
 from blog_app.domain.exceptions.articles import ArticleNotFoundError
 from blog_app.domain.repositories.articles import ArticleRepository
 from blog_app.infrastructure.models.articles import ArticleModel
@@ -60,22 +65,24 @@ class PGArticleRepository(ArticleRepository):
 
         return self._model_to_domain(article) if article else None
 
-    async def get_list(
+    async def get_page(
         self,
         looking_text: str | None,
         category_id: int | None,
-        limit_on_page: int | None,
-        page: int | None,
-    ) -> list[Article]:
-        stmt = select(ArticleModel).where(ArticleModel.is_active == true())
+        page_size: int,
+        page: int,
+    ) -> ArticlePage:
+        filters = [ArticleModel.is_active == true()]
         if category_id is not None:
-            stmt = stmt.where(ArticleModel.category_id == category_id)
+            filters.append(ArticleModel.category_id == category_id)
+
+        stmt = select(ArticleModel)
         if looking_text:
             search_query = func.websearch_to_tsquery(
                 literal_column("'russian'"), looking_text
             )
             rank = func.ts_rank_cd(ArticleModel.search_vector, search_query)
-            stmt = stmt.where(ArticleModel.search_vector.op("@@")(search_query))
+            filters.append(ArticleModel.search_vector.op("@@")(search_query))
             stmt = stmt.order_by(
                 desc(rank),
                 ArticleModel.created_at.desc(),
@@ -83,13 +90,18 @@ class PGArticleRepository(ArticleRepository):
             )
         else:
             stmt = stmt.order_by(ArticleModel.created_at.desc(), ArticleModel.id.asc())
-        if limit_on_page:
-            stmt = stmt.limit(limit_on_page)
-        if page and limit_on_page:
-            stmt = stmt.offset((page - 1) * limit_on_page)
+
+        total_stmt = select(func.count()).select_from(ArticleModel).where(*filters)
+        total = await self._session.scalar(total_stmt)
+        stmt = stmt.where(*filters).limit(page_size).offset((page - 1) * page_size)
         articles = await self._session.scalars(stmt)
 
-        return [self._model_to_domain(article) for article in articles]
+        return ArticlePage(
+            items=[self._model_to_domain(article) for article in articles],
+            total=total or 0,
+            page=page,
+            page_size=page_size,
+        )
 
     async def create(self, article_data: ArticleData) -> Article:
         article = ArticleModel(**asdict(article_data))

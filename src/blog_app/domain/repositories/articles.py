@@ -1,7 +1,12 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from blog_app.domain.entities.articles import Article, ArticleData, ArticleUpdateData
+from blog_app.domain.entities.articles import (
+    Article,
+    ArticleData,
+    ArticlePage,
+    ArticleUpdateData,
+)
 
 
 class ArticleRepository(ABC):
@@ -12,13 +17,13 @@ class ArticleRepository(ABC):
     async def get_by_id_for_update(self, article_id: UUID) -> Article | None: ...
 
     @abstractmethod
-    async def get_list(
+    async def get_page(
         self,
         looking_text: str | None,
         category_id: int | None,
-        limit_on_page: int | None,
-        page: int | None,
-    ) -> list[Article]: ...
+        page_size: int,
+        page: int,
+    ) -> ArticlePage: ...
 
     @abstractmethod
     async def create(self, article_data: ArticleData) -> Article: ...
