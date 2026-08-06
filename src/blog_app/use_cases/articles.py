@@ -86,13 +86,14 @@ class GetListArticles(BaseArticleUseCase):
     async def execute(
         self,
         looking_text: str | None = None,
+        category_id: int | None = None,
         limit_on_page: int | None = None,
         page: int | None = None,
     ) -> list[Article]:
         if looking_text is not None:
             validate_looking_text(looking_text)
         page, limit_on_page = validate_page_and_limit_on_page(page, limit_on_page)
-        return await self.repo.get_list(looking_text, limit_on_page, page)
+        return await self.repo.get_list(looking_text, category_id, limit_on_page, page)
 
 
 class CreateArticle(BaseArticleUseCase):

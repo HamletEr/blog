@@ -55,7 +55,12 @@ async def test_get_list_uses_postgres_full_text_search() -> None:
     )
     session.scalars.return_value = [article]
 
-    await repo.get_list(looking_text="python fastapi", limit_on_page=10, page=1)
+    await repo.get_list(
+        looking_text="python fastapi",
+        category_id=1,
+        limit_on_page=10,
+        page=1,
+    )
 
     stmt = session.scalars.await_args.args[0]
     compiled_query = str(
@@ -66,9 +71,34 @@ async def test_get_list_uses_postgres_full_text_search() -> None:
     )
     assert "websearch_to_tsquery('russian', 'python fastapi')" in compiled_query
     assert "articles.is_active = true" in compiled_query
+    assert "articles.category_id = 1" in compiled_query
     assert "@@" in compiled_query
     assert "ts_rank_cd" in compiled_query
-    assert "ORDER BY" in compiled_query
+    assert "ORDER BY ts_rank_cd" in compiled_query
+    assert "articles.created_at DESC" in compiled_query
+    assert "articles.id ASC" in compiled_query
+
+
+@pytest.mark.asyncio
+async def test_get_list_uses_stable_default_ordering() -> None:
+    session = AsyncMock()
+    repo = PGArticleRepository(session)
+
+    await repo.get_list(
+        looking_text=None,
+        category_id=None,
+        limit_on_page=10,
+        page=1,
+    )
+
+    stmt = session.scalars.await_args.args[0]
+    compiled_query = str(
+        stmt.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert "ORDER BY articles.created_at DESC, articles.id ASC" in compiled_query
 
 
 @pytest.mark.asyncio

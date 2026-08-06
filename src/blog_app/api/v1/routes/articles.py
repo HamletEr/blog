@@ -79,10 +79,14 @@ async def get_articles_list(
     object_storage: ObjectStorageDep,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
     page_number: Annotated[int | None, Query(ge=1)] = None,
+    category_id: Annotated[int | None, Query(ge=1)] = None,
     search: Annotated[str | None, Query(min_length=3, max_length=100)] = None,
 ) -> list[ArticleViewSchema]:
     articles_domain = await use_case.execute(
-        looking_text=search, page=page_number, limit_on_page=page_size
+        looking_text=search,
+        category_id=category_id,
+        page=page_number,
+        limit_on_page=page_size,
     )
     return [
         map_article_to_schema(article, object_storage) for article in articles_domain

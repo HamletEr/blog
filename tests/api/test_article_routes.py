@@ -131,12 +131,18 @@ def test_articles_list_passes_query_params_to_use_case(app, client) -> None:
 
     response = client.get(
         "/api/v1/articles/",
-        params={"page": 2, "limit_on_page": 10, "looking_text": "python"},
+        params={
+            "page_number": 2,
+            "page_size": 10,
+            "category_id": 1,
+            "search": "python",
+        },
     )
 
     assert response.status_code == 200
     use_case.execute.assert_awaited_once_with(
         looking_text="python",
+        category_id=1,
         page=2,
         limit_on_page=10,
     )
@@ -389,7 +395,7 @@ def test_delete_article_returns_403_for_non_admin(
 
 
 def test_articles_list_validates_looking_text_query(client) -> None:
-    response = client.get("/api/v1/articles/", params={"looking_text": "ab"})
+    response = client.get("/api/v1/articles/", params={"search": "ab"})
 
     assert response.status_code == 422
 

@@ -61,17 +61,28 @@ class PGArticleRepository(ArticleRepository):
         return self._model_to_domain(article) if article else None
 
     async def get_list(
-        self, looking_text: str | None, limit_on_page: int | None, page: int | None
+        self,
+        looking_text: str | None,
+        category_id: int | None,
+        limit_on_page: int | None,
+        page: int | None,
     ) -> list[Article]:
         stmt = select(ArticleModel).where(ArticleModel.is_active == true())
+        if category_id is not None:
+            stmt = stmt.where(ArticleModel.category_id == category_id)
         if looking_text:
             search_query = func.websearch_to_tsquery(
                 literal_column("'russian'"), looking_text
             )
             rank = func.ts_rank_cd(ArticleModel.search_vector, search_query)
-            stmt = stmt.where(
-                ArticleModel.search_vector.op("@@")(search_query)
-            ).order_by(desc(rank), ArticleModel.created_at.desc())
+            stmt = stmt.where(ArticleModel.search_vector.op("@@")(search_query))
+            stmt = stmt.order_by(
+                desc(rank),
+                ArticleModel.created_at.desc(),
+                ArticleModel.id.asc(),
+            )
+        else:
+            stmt = stmt.order_by(ArticleModel.created_at.desc(), ArticleModel.id.asc())
         if limit_on_page:
             stmt = stmt.limit(limit_on_page)
         if page and limit_on_page:
